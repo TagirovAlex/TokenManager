@@ -171,7 +171,8 @@ def attribute_list(category_id):
         flash('Категория не найдена', 'error')
         return redirect(url_for('web.categories'))
     attrs = category_service.get_category_attributes(category_id)
-    return render_template('attribute_list.html', category=cat, attributes=attrs)
+    all_attrs = category_service.get_all_attributes()
+    return render_template('attribute_list.html', category=cat, attributes=attrs, all_attributes=all_attrs)
 
 
 @web.route('/categories/<category_id>/attributes/create', methods=['POST'])
@@ -213,60 +214,84 @@ def attribute_create(category_id):
 
 @web.route('/attributes/<attribute_id>/edit')
 def attribute_edit(attribute_id):
-    from app.models import AttributeDef
     attr = db.session.get(AttributeDef, attribute_id)
     if not attr:
         flash('Реквизит не найден', 'error')
-        return redirect(url_for('web.categories'))
+        return redirect(url_for('web.attributes'))
     return render_template('attribute_edit.html', attribute=attr)
 
 
 @web.route('/attributes/<attribute_id>/update', methods=['POST'])
 def attribute_update(attribute_id):
     try:
-        from app.models import AttributeDef
-        attr = db.session.get(AttributeDef, attribute_id)
-        if not attr:
-            flash('Реквизит не найден', 'error')
-            return redirect(url_for('web.categories'))
+        field_type = request.form.get('field_type')
         
-        attr.name = request.form['name']
-        attr.display_name = request.form['display_name']
-        attr.field_type = request.form['field_type']
-        attr.is_required = request.form.get('is_required') == 'on'
+        min_value = None
+        max_value = None
+        step = None
+        options = None
         
-        if attr.field_type == 'int_list':
-            attr.min_value = request.form.get('min_value', type=int)
-            attr.max_value = request.form.get('max_value', type=int)
-            attr.step = request.form.get('step', type=int)
+        if field_type == 'int_list':
+            min_value = request.form.get('min_value', type=int)
+            max_value = request.form.get('max_value', type=int)
+            step = request.form.get('step', type=int)
         
-        if attr.field_type == 'str_list':
+        if field_type == 'str_list':
             options_str = request.form.get('options', '')
-            attr.options = [o.strip() for o in options_str.split(',') if o.strip()]
+            options = [o.strip() for o in options_str.split(',') if o.strip()]
         
-        db.session.commit()
+        category_service.update_attribute(
+            attribute_id=attribute_id,
+            name=request.form['name'],
+            display_name=request.form['display_name'],
+            field_type=field_type,
+            min_value=min_value,
+            max_value=max_value,
+            step=step,
+            options=options,
+            is_required=request.form.get('is_required') == 'on'
+        )
         flash('Реквизит обновлен', 'success')
-    except Exception as e:
-        flash(f'Ошибка: {str(e)}', 'error')
+    except ValueError as e:
+        flash(str(e), 'error')
     
-    return redirect(url_for('web.attribute_list', category_id=attr.category_id))
+    return redirect(url_for('web.attributes'))
 
 
 @web.route('/attributes/<attribute_id>/delete')
 def attribute_delete(attribute_id):
-    from app.models import AttributeDef
-    attr = db.session.get(AttributeDef, attribute_id)
-    if not attr:
-        flash('Реквизит не найден', 'error')
-        return redirect(url_for('web.categories'))
-    
-    category_id = attr.category_id
     try:
-        db.session.delete(attr)
-        db.session.commit()
+        category_service.delete_attribute(attribute_id)
         flash('Реквизит удален', 'success')
-    except Exception as e:
-        flash(f'Ошибка удаления: {str(e)}', 'error')
+    except ValueError as e:
+        flash(str(e), 'error')
+    
+    return redirect(url_for('web.attributes'))
+
+
+@web.route('/categories/<category_id>/attributes/link', methods=['POST'])
+def attribute_link_to_category(category_id):
+    attribute_id = request.form.get('attribute_id')
+    if not attribute_id:
+        flash('Выберите реквизит', 'error')
+        return redirect(url_for('web.attribute_list', category_id=category_id))
+    
+    try:
+        category_service.link_attribute_to_category(attribute_id, category_id)
+        flash('Реквизит привязан', 'success')
+    except ValueError as e:
+        flash(str(e), 'error')
+    
+    return redirect(url_for('web.attribute_list', category_id=category_id))
+
+
+@web.route('/categories/<category_id>/attributes/unlink/<attribute_id>')
+def attribute_unlink_from_category(category_id, attribute_id):
+    try:
+        category_service.unlink_attribute_from_category(attribute_id, category_id)
+        flash('Реквизит отвязан', 'success')
+    except ValueError as e:
+        flash(str(e), 'error')
     
     return redirect(url_for('web.attribute_list', category_id=category_id))
 
@@ -600,9 +625,9 @@ def cleanup_images():
     return redirect(url_for('web.admin'))
 
 
-@web.route('/comfyui/send')
+@web.route('/comfyui/send', methods=['GET', 'POST'])
 def comfyui_send():
-    prompt = request.args.get('prompt', '')
+    prompt = request.form.get('prompt') or request.args.get('prompt', '')
     from flask import current_app
     try:
         from app.services import comfyui_service

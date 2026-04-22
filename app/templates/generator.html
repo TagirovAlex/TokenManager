@@ -9,32 +9,17 @@
 
 <div class="grid grid-2">
     <div class="card">
-        <h3 class="card-title">1. Выберите шаблон</h3>
-        <select id="template-select" class="form-select" onchange="loadTemplateItems()">
-            <option value="">-- Выберите шаблон --</option>
-            {% for template in templates %}
-            <option value="{{ template.id }}" data-text="{{ template.template_text }}">{{ template.name }}</option>
-            {% endfor %}
-        </select>
-        
-        <div id="template-preview" style="margin-top: 1rem;">
-            <div class="prompt-display">{{ template.template_text if template else 'Выберите шаблон для просмотра' }}</div>
-        </div>
-    </div>
-    
-    <div class="card">
-        <h3 class="card-title">2. Выберите объекты</h3>
+        <h3 class="card-title">1. Добавить объект</h3>
         <div id="objects-selection">
             {% for category in categories %}
             <div class="form-group">
                 <h4>{{ category.display_name }}</h4>
                 <div class="grid grid-2">
                     {% for obj in objects if obj.category_id == category.id %}
-                    <div class="object-select-card" onclick="selectObject('{{ obj.id }}', this)">
-                        <input type="checkbox" name="objects" value="{{ obj.id }}" hidden>
+                    <button type="button" class="object-select-btn" onclick="addObject('{{ obj.id }}', '{{ obj.name }}', '{{ obj.prompt|e }}', '{{ obj.category_id }}')">
                         <strong>{{ obj.name }}</strong>
-                        <small>{{ obj.prompt }}</small>
-                    </div>
+                        <small>{{ obj.prompt[:50] }}...</small>
+                    </button>
                     {% endfor %}
                 </div>
             </div>
@@ -42,90 +27,151 @@
             <p class="text-muted">Сначала создайте объекты</p>
             {% endfor %}
         </div>
+        
+        <h4 style="margin-top: 1rem;">Добавить текст</h4>
+        <div class="form-group">
+            <input type="text" id="custom-text-input" class="form-input" placeholder="Произвольный текст">
+            <button type="button" class="btn btn-secondary" style="margin-top: 0.5rem;" onclick="addCustomText()">Добавить</button>
+        </div>
+    </div>
+    
+    <div class="card">
+        <h3 class="card-title">2. Промт</h3>
+        <div id="prompt-builder" class="prompt-display" style="min-height: 200px; padding: 1rem;">
+            {% if generated_prompt %}{{ generated_prompt }}{% endif %}
+        </div>
+        <input type="hidden" id="final-prompt" name="prompt" value="">
     </div>
 </div>
 
-<div class="card" style="margin-top: 1rem;">
-    <h3 class="card-title">3. Генерировать</h3>
-    <form method="POST" action="{{ url_for('web.generate') }}">
-        <input type="hidden" name="template_id" id="template-id" value="">
-        <div id="selected-items"></div>
-        <button type="submit" class="btn btn-primary btn-lg">Сгенерировать промт</button>
+<div id="selected-objects" class="card" style="margin-top: 1rem;">
+    <h3 class="card-title">Добавленные элементы</h3>
+    <div id="elements-list"></div>
+    <p id="no-elements" class="text-muted">Добавьте объекты или текст слева</p>
+</div>
+
+<div class="actions" style="margin-top: 1rem;">
+    <button type="button" class="btn btn-warning" onclick="clearPrompt()">Очистить</button>
+    <button type="button" class="btn btn-secondary" onclick="copyPrompt()">Копировать</button>
+    <form method="POST" action="{{ url_for('web.comfyui_send') }}" style="display: inline;">
+        <input type="hidden" name="prompt" id="comfyui-prompt" value="">
+        <button type="submit" class="btn btn-primary">Отправить в ComfyUI</button>
     </form>
 </div>
 
 {% if generated_prompt %}
 <div class="card" style="margin-top: 1rem;">
-    <h3 class="card-title">Результат</h3>
-    <div class="prompt-display" id="generated-prompt">{{ generated_prompt }}</div>
-    <div class="actions" style="margin-top: 1rem;">
-        <button class="btn btn-secondary" onclick="copyToClipboard('{{ generated_prompt }}')">Копировать</button>
-        <a href="{{ url_for('web.comfyui_send', prompt=generated_prompt|url_encode) }}" class="btn btn-primary">Отправить в ComfyUI</a>
-    </div>
+    <h3 class="card-title">Последний результат</h3>
+    <div class="prompt-display">{{ generated_prompt }}</div>
 </div>
 {% endif %}
 
 <script>
-function loadTemplateItems() {
-    const select = document.getElementById('template-select');
-    const templateId = select.value;
-    document.getElementById('template-id').value = templateId;
-    
-    const option = select.options[select.selectedIndex];
-    const templateText = option.dataset.text;
-    
-    const preview = document.getElementById('template-preview');
-    preview.innerHTML = '<div class="prompt-display">' + (templateText || 'Выберите шаблон') + '</div>';
+let elements = [];
+let promptParts = [];
+
+function addObject(objId, objName, objPrompt, categoryId) {
+    elements.push({
+        type: 'object',
+        id: objId,
+        name: objName,
+        prompt: objPrompt,
+        categoryId: categoryId
+    });
+    promptParts.push(objPrompt);
+    updatePromptDisplay();
 }
 
-function selectObject(objectId, card) {
-    const checkbox = card.querySelector('input[type="checkbox"]');
-    checkbox.checked = !checkbox.checked;
-    card.classList.toggle('selected', checkbox.checked);
-    updateSelectedItems();
+function addCustomText() {
+    const input = document.getElementById('custom-text-input');
+    const text = input.value.trim();
+    if (!text) return;
+    
+    elements.push({
+        type: 'text',
+        content: text
+    });
+    promptParts.push(text);
+    input.value = '';
+    updatePromptDisplay();
 }
 
-function updateSelectedItems() {
-    const container = document.getElementById('selected-items');
-    const checkboxes = document.querySelectorAll('#objects-selection input:checked');
+function updatePromptDisplay() {
+    const display = document.getElementById('prompt-builder');
+    const list = document.getElementById('elements-list');
+    const noElements = document.getElementById('no-elements');
     
-    container.innerHTML = checkboxes.length > 0 
-        ? '<p>Выбрано объектов: ' + checkboxes.length + '</p>'
-        : '<p class="text-muted">Выберите объекты слева</p>';
+    display.innerHTML = promptParts.join('<br>');
+    list.innerHTML = elements.map((el, idx) => {
+        if (el.type === 'object') {
+            return '<div class="element-item"><span><strong>' + el.name + '</strong>: ' + el.prompt + '</span><button type="button" class="btn btn-sm btn-danger" onclick="removeElement(' + idx + ')">×</button></div>';
+        } else {
+            return '<div class="element-item"><span>' + el.content + '</span><button type="button" class="btn btn-sm btn-danger" onclick="removeElement(' + idx + ')">×</button></div>';
+        }
+    }).join('');
+    
+    noElements.style.display = elements.length === 0 ? 'block' : 'none';
+    document.getElementById('final-prompt').value = promptParts.join(' ');
+    document.getElementById('comfyui-prompt').value = promptParts.join(' ');
+}
+
+function removeElement(idx) {
+    elements.splice(idx, 1);
+    promptParts.splice(idx, 1);
+    updatePromptDisplay();
+}
+
+function clearPrompt() {
+    elements = [];
+    promptParts = [];
+    updatePromptDisplay();
+}
+
+function copyPrompt() {
+    const prompt = document.getElementById('final-prompt').value;
+    navigator.clipboard.writeText(prompt).then(() => {
+        alert('Скопировано!');
+    });
 }
 </script>
 
 <style>
-.object-select-card {
+.object-select-btn {
     padding: 0.5rem;
     border: 1px solid var(--border-color);
     border-radius: 0.25rem;
+    background: var(--bg-color);
     cursor: pointer;
+    text-align: left;
+    width: 100%;
     transition: all 0.2s;
 }
 
-.object-select-card:hover {
-    background-color: var(--bg-color);
-}
-
-.object-select-card.selected {
+.object-select-btn:hover {
     border-color: var(--primary-color);
-    background-color: #dbeafe;
+    background: #dbeafe;
 }
 
-.object-select-card strong {
+.object-select-btn strong {
     display: block;
 }
 
-.object-select-card small {
+.object-select-btn small {
     display: block;
     font-size: 0.75rem;
     color: var(--text-muted);
 }
 
-.btn-lg {
-    padding: 0.75rem 2rem;
-    font-size: 1rem;
+.element-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 0.5rem;
+    border-bottom: 1px solid var(--border-color);
+}
+
+.element-item:last-child {
+    border-bottom: none;
 }
 </style>
 {% endblock %}

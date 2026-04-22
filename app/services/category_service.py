@@ -1,5 +1,5 @@
 from app import db
-from app.models import Category, AttributeDef
+from app.models import Category, AttributeDef, CategoryAttribute
 
 
 def get_all_categories():
@@ -58,21 +58,21 @@ def delete_category(category_id):
 
 
 def get_category_attributes(category_id):
-    return AttributeDef.query.filter_by(category_id=category_id).all()
+    links = CategoryAttribute.query.filter_by(category_id=category_id).all()
+    return [link.attribute_def for link in links]
 
 
 def get_all_attributes():
     return AttributeDef.query.all()
 
 
-def create_category_attribute(category_id, name, display_name, field_type, 
-                             min_value=None, max_value=None, step=None, 
-                             options=None, is_required=False):
+def create_attribute(name, display_name, field_type, 
+                   min_value=None, max_value=None, step=None, 
+                   options=None, is_required=False):
     if field_type not in AttributeDef.FIELD_TYPES:
         raise ValueError(f'Invalid field_type: {field_type}')
     
     attr = AttributeDef(
-        category_id=category_id,
         name=name,
         display_name=display_name,
         field_type=field_type,
@@ -84,4 +84,65 @@ def create_category_attribute(category_id, name, display_name, field_type,
     )
     db.session.add(attr)
     db.session.commit()
+    return attr
+
+
+def update_attribute(attribute_id, **kwargs):
+    attr = db.session.get(AttributeDef, attribute_id)
+    if not attr:
+        raise ValueError('Attribute not found')
+    
+    for field in ['name', 'display_name', 'field_type', 'min_value', 'max_value', 'step', 'options', 'is_required']:
+        if field in kwargs:
+            setattr(attr, field, kwargs[field])
+    
+    db.session.commit()
+    return attr
+
+
+def delete_attribute(attribute_id):
+    attr = db.session.get(AttributeDef, attribute_id)
+    if not attr:
+        raise ValueError('Attribute not found')
+    
+    db.session.delete(attr)
+    db.session.commit()
+
+
+def link_attribute_to_category(attribute_id, category_id):
+    existing = CategoryAttribute.query.filter_by(
+        attribute_def_id=attribute_id,
+        category_id=category_id
+    ).first()
+    if existing:
+        raise ValueError('Attribute already linked to category')
+    
+    link = CategoryAttribute(
+        attribute_def_id=attribute_id,
+        category_id=category_id
+    )
+    db.session.add(link)
+    db.session.commit()
+    return link
+
+
+def unlink_attribute_from_category(attribute_id, category_id):
+    link = CategoryAttribute.query.filter_by(
+        attribute_def_id=attribute_id,
+        category_id=category_id
+    ).first()
+    if not link:
+        raise ValueError('Link not found')
+    
+    db.session.delete(link)
+    db.session.commit()
+
+
+def create_category_attribute(category_id, name, display_name, field_type, 
+                         min_value=None, max_value=None, step=None, 
+                         options=None, is_required=False):
+    attr = create_attribute(name, display_name, field_type, 
+                          min_value, max_value, step, 
+                          options, is_required)
+    link_attribute_to_category(attr.id, category_id)
     return attr

@@ -1,6 +1,6 @@
 {% extends "base.html" %}
 
-{% block title %}Реквизиты: {{ category.display_name }} - Prompt Manager{% endblock %}
+{% block title %}Реквизиты категории: {{ category.display_name }} - Prompt Manager{% endblock %}
 
 {% block content %}
 <div class="page-header">
@@ -10,53 +10,28 @@
 
 <div class="grid grid-2">
     <div class="card">
-        <h3 class="card-title">Создать реквизит</h3>
-        <form method="POST" action="{{ url_for('web.attribute_create', category_id=category.id) }}">
+        <h3 class="card-title">Привязать реквизит</h3>
+        <form method="POST" action="{{ url_for('web.attribute_link_to_category', category_id=category.id) }}">
             <div class="form-group">
-                <label class="form-label">Техническое имя *</label>
-                <input type="text" name="name" class="form-input" required placeholder="gender">
-            </div>
-            <div class="form-group">
-                <label class="form-label">Отображаемое имя *</label>
-                <input type="text" name="display_name" class="form-input" required placeholder="Пол">
-            </div>
-            <div class="form-group">
-                <label class="form-label">Тип поля *</label>
-                <select name="field_type" class="form-select" required id="field-type-select">
-                    <option value="bool">Да/Нет (checkbox)</option>
-                    <option value="int">Число</option>
-                    <option value="int_list">Число из списка</option>
-                    <option value="str">Текст</option>
-                    <option value="str_list">Выбор из списка</option>
+                <label class="form-label">Выберите реквизит *</label>
+                <select name="attribute_id" class="form-select" required>
+                    <option value="">Выберите реквизит</option>
+                    {% for attr in all_attributes %}
+                    {% if attr not in attributes %}
+                    <option value="{{ attr.id }}">{{ attr.display_name }} ({{ attr.name }})</option>
+                    {% endif %}
+                    {% endfor %}
                 </select>
             </div>
-            <div class="form-group int-list-params" style="display: none;">
-                <label class="form-label">Минимум</label>
-                <input type="number" name="min_value" class="form-input" value="0">
-            </div>
-            <div class="form-group int-list-params" style="display: none;">
-                <label class="form-label">Максимум</label>
-                <input type="number" name="max_value" class="form-input" value="100">
-            </div>
-            <div class="form-group int-list-params" style="display: none;">
-                <label class="form-label">Шаг</label>
-                <input type="number" name="step" class="form-input" value="1">
-            </div>
-            <div class="form-group str-list-params" style="display: none;">
-                <label class="form-label">Варианты (через запятую)</label>
-                <input type="text" name="options" class="form-input" placeholder="мужской, женский">
-            </div>
-            <div class="form-group">
-                <label class="form-label">
-                    <input type="checkbox" name="is_required"> Обязательное поле
-                </label>
-            </div>
-            <button type="submit" class="btn btn-primary">Создать реквизит</button>
+            <button type="submit" class="btn btn-primary">Привязать</button>
         </form>
+        
+        <h4 style="margin-top: 1rem;">Все доступные реквизиты</h4>
+        <p><a href="{{ url_for('web.attributes') }}">Управление реквизитами</a></p>
     </div>
     
     <div class="card">
-        <h3 class="card-title">Существующие реквизиты ({{ attributes|length }})</h3>
+        <h3 class="card-title">Привязанные реквизиты ({{ attributes|length }})</h3>
         {% if attributes %}
         <table class="table">
             <thead>
@@ -77,26 +52,17 @@
                     <td>{% if attr.is_required %}✓{% endif %}</td>
                     <td>
                         <a href="{{ url_for('web.attribute_edit', attribute_id=attr.id) }}" class="btn btn-sm btn-secondary">Ред.</a>
-                        <a href="{{ url_for('web.attribute_delete', attribute_id=attr.id) }}" class="btn btn-sm btn-danger" data-confirm="Удалить реквизит?">Удал.</a>
+                        <a href="{{ url_for('web.attribute_unlink_from_category', category_id=category.id, attribute_id=attr.id) }}" class="btn btn-sm btn-danger" data-confirm="Отвязать реквизит?">Отвязать</a>
                     </td>
                 </tr>
                 {% endfor %}
             </tbody>
         </table>
         {% else %}
-        <p class="text-muted">Реквизитов пока нет. Создайте первый!</p>
+        <p class="text-muted">Реквизитов не привязано. Привяжите из списка!</p>
         {% endif %}
     </div>
 </div>
-
-<script>
-document.getElementById('field-type-select').addEventListener('change', function() {
-    const showIntList = this.value === 'int_list';
-    const showStrList = this.value === 'str_list';
-    document.querySelectorAll('.int-list-params').forEach(el => el.style.display = showIntList ? 'block' : 'none');
-    document.querySelectorAll('.str-list-params').forEach(el => el.style.display = showStrList ? 'block' : 'none');
-});
-</script>
 
 <style>
 .badge {

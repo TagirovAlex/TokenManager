@@ -16,7 +16,7 @@ class Category(db.Model):
     updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
     
     objects = db.relationship('Object', backref='category', lazy='dynamic', cascade='all, delete-orphan')
-    attribute_defs = db.relationship('AttributeDef', backref='category', lazy='dynamic', cascade='all, delete-orphan')
+    attribute_links = db.relationship('CategoryAttribute', backref='category', lazy='dynamic', cascade='all, delete-orphan')
     
     def to_dict(self):
         return {
@@ -29,7 +29,7 @@ class Category(db.Model):
             'created_at': self.created_at.isoformat() if self.created_at else None,
             'updated_at': self.updated_at.isoformat() if self.updated_at else None,
             'objects_count': self.objects.count(),
-            'attributes_count': self.attribute_defs.count()
+            'attributes_count': self.attribute_links.count()
         }
 
 
@@ -70,7 +70,6 @@ class AttributeDef(db.Model):
     FIELD_TYPES = ['bool', 'int', 'int_list', 'str', 'str_list']
     
     id = db.Column(db.String(36), primary_key=True, default=lambda: str(uuid.uuid4()))
-    category_id = db.Column(db.String(36), db.ForeignKey('categories.id'), nullable=False)
     name = db.Column(db.String(100), nullable=False)
     display_name = db.Column(db.String(255), nullable=False)
     field_type = db.Column(db.String(20), nullable=False)
@@ -80,12 +79,12 @@ class AttributeDef(db.Model):
     options = db.Column(db.JSON)
     is_required = db.Column(db.Boolean, default=False)
     
+    category_links = db.relationship('CategoryAttribute', backref='attribute_def', lazy='dynamic', cascade='all, delete-orphan')
     attr_values = db.relationship('AttrValue', backref='attribute_def', lazy='dynamic')
     
     def to_dict(self):
         return {
             'id': self.id,
-            'category_id': self.category_id,
             'name': self.name,
             'display_name': self.display_name,
             'field_type': self.field_type,
@@ -95,6 +94,20 @@ class AttributeDef(db.Model):
             'options': self.options,
             'is_required': self.is_required
         }
+
+
+class CategoryAttribute(db.Model):
+    __tablename__ = 'category_attributes'
+    
+    id = db.Column(db.String(36), primary_key=True, default=lambda: str(uuid.uuid4()))
+    category_id = db.Column(db.String(36), db.ForeignKey('categories.id'), nullable=False)
+    attribute_def_id = db.Column(db.String(36), db.ForeignKey('attribute_defs.id'), nullable=False)
+    
+    category = db.relationship('Category', backref='attribute_links')
+    
+    __table_args__ = (
+        db.UniqueConstraint('category_id', 'attribute_def_id', name='uq_category_attribute'),
+    )
 
 
 class AttrValue(db.Model):
