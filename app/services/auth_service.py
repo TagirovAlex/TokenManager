@@ -23,7 +23,7 @@ def get_user_by_email(email):
     return User.query.filter_by(email=email).first()
 
 
-def create_user(username, email, password, is_admin=False):
+def create_user(username, email, password, is_admin=None):
     _validate_password(password)
     
     if User.query.filter_by(username=username).first():
@@ -32,10 +32,14 @@ def create_user(username, email, password, is_admin=False):
     if User.query.filter_by(email=email).first():
         raise ValueError('Email already exists')
     
+    # Первый пользователь становится админом
+    if User.query.count() == 0:
+        is_admin = True
+    
     user = User(
         username=username,
         email=email,
-        is_admin=is_admin
+        is_admin=is_admin or False
     )
     user.set_password(password)
     

@@ -71,6 +71,7 @@ def register():
         
         try:
             user = auth_service.create_user(username, email, password)
+            # First registered user becomes admin automatically
             session['user_id'] = user.id
             session['username'] = user.username
             session['is_admin'] = user.is_admin
