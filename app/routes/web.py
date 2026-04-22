@@ -29,7 +29,7 @@ def categories():
     if search:
         query = search_filter(query, Category, ['name', 'display_name', 'description'], search)
     result = paginate(query.order_by(Category.created_at.desc()), page, per_page)
-    return render_template('categories.html', categories=result['items'], pagination=result, search=search)
+    return render_template('categories.html', categories=result['items'], pg=result, search=search)
 
 
 @web.route('/categories/create', methods=['POST'])
@@ -132,9 +132,6 @@ def attributes():
 @web.route('/attributes/create', methods=['POST'])
 def attribute_global_create():
     category_id = request.form.get('category_id')
-    if not category_id:
-        flash('Выберите категорию', 'error')
-        return redirect(url_for('web.attributes'))
     
     field_type = request.form.get('field_type')
     
@@ -153,8 +150,7 @@ def attribute_global_create():
         options = [o.strip() for o in options_str.split(',') if o.strip()]
     
     try:
-        category_service.create_category_attribute(
-            category_id=category_id,
+        attr = category_service.create_attribute(
             name=request.form['name'],
             display_name=request.form['display_name'],
             field_type=field_type,
@@ -164,6 +160,10 @@ def attribute_global_create():
             options=options,
             is_required=request.form.get('is_required') == 'on'
         )
+        
+        if category_id:
+            category_service.link_attribute_to_category(attr.id, category_id)
+        
         flash('Реквизит создан', 'success')
     except ValueError as e:
         flash(str(e), 'error')
@@ -380,7 +380,8 @@ def object_edit(object_id):
     
     cats = category_service.get_all_categories()
     attrs = category_service.get_category_attributes(obj.category_id)
-    return render_template('object_edit.html', object=obj, categories=cats, attributes=attrs)
+    all_attrs = category_service.get_all_attributes()
+    return render_template('object_edit.html', object=obj, categories=cats, attributes=attrs, all_attributes=all_attrs)
 
 
 @web.route('/objects/update/<object_id>', methods=['POST'])

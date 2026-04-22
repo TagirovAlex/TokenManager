@@ -1,53 +1,21 @@
-{% macro pagination(pagination, endpoint) %}
-{% if pagination.pages > 1 %}
-<div class="pagination-wrapper">
-    <div class="pagination-info">Показано {{ pagination.items|length }} из {{ pagination.total }}</div>
-    <div class="pagination-nav">
-        {% if pagination.has_prev %}
-        <a href="{{ url_for(endpoint, page=pagination.prev_num, **kwargs) }}" class="btn btn-sm">&laquo; Назад</a>
-        {% endif %}
-        {% for p in range(1, pagination.pages + 1) %}
-            {% if p == pagination.page %}
-            <span class="btn btn-sm btn-primary">{{ p }}</span>
-            {% elif p >= pagination.page - 2 and p <= pagination.page + 2 %}
-            <a href="{{ url_for(endpoint, page=p, **kwargs) }}" class="btn btn-sm">{{ p }}</a>
-            {% endif %}
-        {% endfor %}
-        {% if pagination.has_next %}
-        <a href="{{ url_for(endpoint, page=pagination.next_num, **kwargs) }}" class="btn btn-sm">Вперед &raquo;</a>
-        {% endif %}
-    </div>
-    <div class="pagination-per-page">
-        <form method="GET">
-            {% for key, value in kwargs.items() %}
-            <input type="hidden" name="{{ key }}" value="{{ value }}">
-            {% endfor %}
-            <label>Показывать: <select name="per_page" onchange="this.form.submit()">
-                <option value="10" {% if pagination.per_page == 10 %}selected{% endif %}>10</option>
-                <option value="20" {% if pagination.per_page == 20 %}selected{% endif %}>20</option>
-                <option value="50" {% if pagination.per_page == 50 %}selected{% endif %}>50</option>
-            </select></label>
-        </form>
-    </div>
+{% macro pagination(pg, endpoint) %}
+{% if pg.pages > 1 %}
+<div class="pagination-wrap">
+    <span>Стр. {{ pg.page }}/{{ pg.pages }}</span>
+    {% if pg.has_prev %}<a href="{{ url_for(endpoint, page=pg.prev_num) }}">&laquo;</a>{% endif %}
+    {% if pg.has_next %}<a href="{{ url_for(endpoint, page=pg.next_num) }}">&raquo;</a>{% endif %}
 </div>
 {% endif %}
 {% endmacro %}
 
-{% macro search_form(endpoint, search='') %}
-<form method="GET" class="search-form">
-    {% for key, value in kwargs.items() %}<input type="hidden" name="{{ key }}" value="{{ value }}">{% endfor %}
-    <input type="text" name="search" value="{{ search }}" placeholder="Поиск..." class="search-input">
-    <button type="submit" class="btn btn-sm">Найти</button>
-    {% if search %}<a href="{{ url_for(endpoint, **kwargs) }}" class="btn btn-sm btn-secondary">Сброс</a>{% endif %}
-</form>
+{% macro search(endpoint) %}
+<form method="GET" class="search-mini"><input name="search" placeholder="Поиск..."><button>►</button></form>
 {% endmacro %}
 
 <style>
-.pagination-wrapper{display:flex;justify-content:space-between;align-items:center;padding:1rem 0;gap:1rem;flex-wrap:wrap}
-.pagination-info{color:var(--text-muted);font-size:0.875rem}
-.pagination-nav{display:flex;gap:0.25rem}
-.pagination-nav .btn{padding:0.25rem 0.5rem;font-size:0.75rem}
-.pagination-per-page{font-size:0.75rem}
-.search-form{display:flex;gap:0.5rem;margin-bottom:1rem}
-.search-input{padding:0.25rem;border:1px solid var(--border-color);border-radius:0.25rem;width:200px}
+.pagination-wrap{display:flex;gap:0.5rem;font-size:0.75rem;align-items:center}
+.pagination-wrap a{text-decoration:none;padding:0.125rem 0.25rem;border:1px solid var(--border-color);border-radius:0.125rem}
+.search-mini{display:flex;gap:0.25rem;margin-bottom:0.5rem}
+.search-mini input{padding:0.125rem 0.25rem;font-size:0.75rem;width:100px}
+.search-mini button{padding:0.125rem 0.25rem;font-size:0.75rem}
 </style>

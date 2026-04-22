@@ -1,15 +1,15 @@
 {% extends "base.html" %}
-{% from "pagination.html" import pagination, search_form %}
+{% from "pagination.html" import pagination, search %}
 
 {% block title %}Категории - Prompt Manager{% endblock %}
 
 {% block content %}
 <div class="page-header">
     <h1 class="page-title">Категории</h1>
-    <button class="btn btn-primary" data-modal="create-category">Добавить</button>
+    <button class="btn btn-sm btn-primary" data-modal="create-category">Добавить</button>
 </div>
 
-{{ search_form('web.categories', search) }}
+{{ search('web.categories') }}
 
 <div class="category-grid">
     {% for category in categories %}
@@ -30,23 +30,22 @@
     {% else %}
     <div class="empty-state">
         <div class="empty-state-icon">📂</div>
-        <p>Категорий пока нет</p>
-        <button class="btn btn-primary" data-modal="create-category">Создать</button>
+        <p>Категорий нет</p>
     </div>
     {% endfor %}
 </div>
 
-{{ pagination(pagination, 'web.categories', search=search) }}
+{{ pagination(pg, 'web.categories') }}
 
 <style>
-.category-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(100px,1fr));gap:0.5rem}
-.category-card{padding:0.25rem;text-align:center}
-.category-link{display:block;text-decoration:none;color:inherit;padding:0.25rem;border-radius:0.25rem}
+.category-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(80px,1fr));gap:0.25rem}
+.category-card{padding:0.125rem;text-align:center}
+.category-link{display:block;text-decoration:none;color:inherit;padding:0.125rem;border-radius:0.25rem}
 .category-link:hover{background:var(--border-color)}
-.category-image{width:60px;height:60px;object-fit:cover;border-radius:0.25rem;margin:0 auto 0.25rem}
-.category-icon{width:60px;height:60px;display:flex;align-items:center;justify-content:center;font-size:1.5rem;margin:0 auto 0.25rem;background:var(--border-color);border-radius:0.25rem}
-.category-name{font-size:0.625rem;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.category-image{width:50px;height:50px;object-fit:cover;border-radius:0.25rem;margin:0 auto}
+.category-icon{width:50px;height:50px;display:flex;align-items:center;justify-content:center;font-size:1.25rem;margin:0 auto;background:var(--border-color);border-radius:0.25rem}
+.category-name{font-size:0.5rem;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .category-actions-mini{display:flex;justify-content:center;gap:0.125rem;margin-top:0.125rem}
-.btn-xs{padding:0.125rem 0.25rem;font-size:0.5rem}
+.btn-xs{padding:0.125rem;font-size:0.5rem}
 </style>
 {% endblock %}

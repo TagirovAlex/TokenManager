@@ -31,16 +31,17 @@
             <textarea name="description" class="form-textarea">{{ object.description or '' }}</textarea>
         </div>
         
-        {% if attributes %}
+        {% if all_attributes %}
         <h4 style="margin: 1rem 0;">Реквизиты</h4>
-        {% for attr in attributes %}
+        <input type="text" id="attr-search" placeholder="Поиск реквизитов..." onkeyup="filterAttrs()" style="margin-bottom: 0.5rem; width: 100%; padding: 0.25rem;">
+        {% for attr in all_attributes %}
         {% set current_value = None %}
         {% for av in object.attr_values %}
             {% if av.attribute_def_id == attr.id %}
                 {% set current_value = av %}
             {% endif %}
         {% endfor %}
-        <div class="form-group">
+        <div class="form-group attr-item">
             <label class="form-label">{{ attr.display_name }}</label>
             {% if attr.field_type == 'bool' %}
             <select name="attr_{{ attr.id }}" class="form-select">
@@ -106,6 +107,12 @@ function previewImage(input) {
         }
         reader.readAsDataURL(input.files[0]);
     }
+}
+function filterAttrs() {
+    const search = document.getElementById('attr-search').value.toLowerCase();
+    document.querySelectorAll('.attr-item').forEach(el => {
+        el.style.display = el.textContent.toLowerCase().includes(search) ? 'block' : 'none';
+    });
 }
 </script>
 {% endblock %}
