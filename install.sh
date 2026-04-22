@@ -9,7 +9,12 @@ USER="prompt"
 GROUP="prompt"
 DB_NAME="prompt_manager"
 DB_USER="prompt_user"
-DB_PASS=$(openssl rand -base64 32 | tr -dc 'a-zA-Z0-9' | head -c 32)
+
+# Читаем пароль из .env если существует, иначе генерируем
+if [ -f "$APP_DIR/.env" ]; then
+    source "$APP_DIR/.env"
+fi
+DB_PASS=${DB_PASS:-$(openssl rand -base64 32 | tr -dc 'a-zA-Z0-9' | head -c 32)}
 
 if [ "$EUID" -ne 0 ]; then
     echo "Ошибка: запустите от root"
@@ -63,7 +68,9 @@ source venv/bin/activate
 pip install --upgrade pip setuptools wheel
 pip install --no-cache-dir -r requirements.txt
 
-cat > .env << EOF
+# Создаём .env только если его нет
+if [ ! -f .env ]; then
+    cat > .env << EOF
 SECRET_KEY=$(openssl rand -base64 32)
 DATABASE_URL=postgresql://$DB_USER:$DB_PASS@localhost:5432/$DB_NAME
 SERVER_HOST=127.0.0.1
@@ -73,6 +80,7 @@ UPLOAD_DIR=/var/lib/prompt_manager/uploads
 BACKUP_DIR=/var/backups/prompt_manager
 COMFYUI_HOST=http://localhost:8188
 EOF
+fi
 
 chown -R $USER:$GROUP $APP_DIR/.env
 
