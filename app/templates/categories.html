@@ -10,11 +10,21 @@
 
 <div class="category-grid">
     {% for category in categories %}
-    <a href="{{ url_for('web.category_detail', category_id=category.id) }}" class="category-card">
-        <div class="category-card-icon">{{ category.icon or '📁' }}</div>
-        <div class="category-card-name">{{ category.display_name }}</div>
-        <div class="category-card-count">{{ category.objects_count }} объектов</div>
-    </a>
+    <div class="category-card">
+        <a href="{{ url_for('web.category_detail', category_id=category.id) }}" class="category-link">
+            {% if category.image_path %}
+            <img src="{{ category.image_path }}" alt="{{ category.display_name }}" class="category-image">
+            {% else %}
+            <div class="category-icon">{{ category.icon or '📁' }}</div>
+            {% endif %}
+            <div class="category-name">{{ category.display_name }}</div>
+            <div class="category-count">{{ category.objects_count }} объектов</div>
+        </a>
+        <div class="category-actions">
+            <a href="{{ url_for('web.category_edit', category_id=category.id) }}" class="btn btn-sm btn-secondary">Ред.</a>
+            <a href="{{ url_for('web.category_delete', category_id=category.id) }}" class="btn btn-sm btn-danger" data-confirm="Удалить категорию и все её объекты?">Удал.</a>
+        </div>
+    </div>
     {% else %}
     <div class="empty-state">
         <div class="empty-state-icon">📂</div>
@@ -30,7 +40,7 @@
             <h2>Создать категорию</h2>
             <button class="modal-close">&times;</button>
         </div>
-        <form method="POST" action="{{ url_for('web.category_create') }}">
+        <form method="POST" action="{{ url_for('web.category_create') }}" enctype="multipart/form-data">
             <div class="form-group">
                 <label class="form-label">Имя (techname)</label>
                 <input type="text" name="name" class="form-input" required placeholder="character">
@@ -44,11 +54,30 @@
                 <textarea name="description" class="form-textarea" placeholder="Описание категории"></textarea>
             </div>
             <div class="form-group">
-                <label class="form-label">Иконка (emoji)</label>
-                <input type="text" name="icon" class="form-input" placeholder="👤">
+                <label class="form-label">Изображение</label>
+                <input type="file" name="image" class="form-input" accept="image/*" onchange="previewCategoryImage(this)">
+                <div id="category-image-preview" style="margin-top: 10px; display: none;">
+                    <img id="category-preview-img" style="max-width: 200px; max-height: 200px; border-radius: 8px;">
+                </div>
             </div>
             <button type="submit" class="btn btn-primary">Создать</button>
         </form>
     </div>
 </div>
+
+<script>
+function previewCategoryImage(input) {
+    const preview = document.getElementById('category-image-preview');
+    const img = document.getElementById('category-preview-img');
+    
+    if (input.files && input.files[0]) {
+        const reader = new FileReader();
+        reader.onload = function(e) {
+            img.src = e.target.result;
+            preview.style.display = 'block';
+        }
+        reader.readAsDataURL(input.files[0]);
+    }
+}
+</script>
 {% endblock %}

@@ -10,7 +10,7 @@ def get_category_by_id(category_id):
     return db.session.get(Category, category_id)
 
 
-def create_category(name, display_name, description=None, icon=None):
+def create_category(name, display_name, description=None, icon=None, image_path=None):
     if Category.query.filter_by(name=name).first():
         raise ValueError('Category with this name already exists')
     
@@ -18,7 +18,8 @@ def create_category(name, display_name, description=None, icon=None):
         name=name,
         display_name=display_name,
         description=description,
-        icon=icon
+        icon=icon,
+        image_path=image_path
     )
     db.session.add(category)
     db.session.commit()
@@ -36,7 +37,7 @@ def update_category(category_id, **kwargs):
             raise ValueError('Category name already exists')
         category.name = kwargs['name']
     
-    for field in ['display_name', 'description', 'icon']:
+    for field in ['display_name', 'description', 'icon', 'image_path']:
         if field in kwargs:
             setattr(category, field, kwargs[field])
     
@@ -48,6 +49,10 @@ def delete_category(category_id):
     category = db.session.get(Category, category_id)
     if not category:
         raise ValueError('Category not found')
+    
+    if category.objects.count() > 0:
+        raise ValueError(f'Cannot delete category: contains {category.objects.count()} objects. Delete objects first.')
+    
     db.session.delete(category)
     db.session.commit()
 

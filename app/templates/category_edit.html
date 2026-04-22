@@ -1,0 +1,71 @@
+{% extends "base.html" %}
+
+{% block title %}Редактировать категорию - Prompt Manager{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <h1 class="page-title">Редактировать категорию</h1>
+    <a href="{{ url_for('web.categories') }}" class="btn btn-secondary">Назад</a>
+</div>
+
+<div class="card" style="max-width: 600px;">
+    <form method="POST" action="{{ url_for('web.category_update', category_id=category.id) }}" enctype="multipart/form-data">
+        <div class="form-group">
+            <label class="form-label">Имя (techname)</label>
+            <input type="text" name="name" class="form-input" required value="{{ category.name }}">
+        </div>
+        <div class="form-group">
+            <label class="form-label">Отображаемое имя</label>
+            <input type="text" name="display_name" class="form-input" required value="{{ category.display_name }}">
+        </div>
+        <div class="form-group">
+            <label class="form-label">Описание</label>
+            <textarea name="description" class="form-textarea">{{ category.description or '' }}</textarea>
+        </div>
+        <div class="form-group">
+            <label class="form-label">Иконка (emoji)</label>
+            <input type="text" name="icon" class="form-input" value="{{ category.icon or '' }}" placeholder="👤">
+        </div>
+        <div class="form-group">
+            <label class="form-label">Изображение</label>
+            {% if category.image_path %}
+            <div style="margin-bottom: 10px;">
+                <img src="{{ category.image_path }}" style="max-width: 200px; max-height: 200px; border-radius: 8px;">
+                <input type="hidden" name="current_image_path" value="{{ category.image_path }}">
+                <label style="display: block; margin-top: 5px;">
+                    <input type="checkbox" name="keep_image" value="true" checked> Сохранить текущее изображение
+                </label>
+            </div>
+            {% endif %}
+            <input type="file" name="image" class="form-input" accept="image/*" onchange="previewEditCategoryImage(this)">
+            <div id="category-edit-preview" style="margin-top: 10px; display: none;">
+                <img id="category-edit-img" style="max-width: 200px; max-height: 200px; border-radius: 8px;">
+            </div>
+        </div>
+        <div class="form-group">
+            <label class="form-label">Объектов в категории</label>
+            <p class="text-muted">{{ category.objects_count }} объектов</p>
+        </div>
+        <div class="actions">
+            <button type="submit" class="btn btn-primary">Сохранить</button>
+            <a href="{{ url_for('web.category_delete', category_id=category.id) }}" class="btn btn-danger" data-confirm="Удалить категорию и все её объекты ({{ category.objects_count }} шт.)?">Удалить категорию</a>
+        </div>
+    </form>
+</div>
+
+<script>
+function previewEditCategoryImage(input) {
+    const preview = document.getElementById('category-edit-preview');
+    const img = document.getElementById('category-edit-img');
+    
+    if (input.files && input.files[0]) {
+        const reader = new FileReader();
+        reader.onload = function(e) {
+            img.src = e.target.result;
+            preview.style.display = 'block';
+        }
+        reader.readAsDataURL(input.files[0]);
+    }
+}
+</script>
+{% endblock %}

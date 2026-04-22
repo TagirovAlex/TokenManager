@@ -1,5 +1,5 @@
 from app import db
-from app.models import Object, AttrValue
+from app.models import Object, AttrValue, TemplateItem
 
 
 def get_all_objects(category_id=None, is_active=None):
@@ -61,10 +61,28 @@ def update_object(object_id, **kwargs):
     return obj
 
 
+def get_object_references(object_id):
+    from app.models import Template, TemplateResult
+    refs = []
+    
+    items = TemplateItem.query.filter_by(object_id=object_id).all()
+    for item in items:
+        template = Template.query.get(item.template_id)
+        if template:
+            refs.append(f'Шаблон "{template.name}"')
+    
+    return refs
+
+
 def delete_object(object_id):
     obj = db.session.get(Object, object_id)
     if not obj:
         raise ValueError('Object not found')
+    
+    refs = get_object_references(object_id)
+    if refs:
+        raise ValueError(f'Object is used in: {", ".join(refs)}')
+    
     db.session.delete(obj)
     db.session.commit()
 

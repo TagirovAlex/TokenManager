@@ -11,6 +11,7 @@ class Category(db.Model):
     display_name = db.Column(db.String(255), nullable=False)
     description = db.Column(db.Text)
     icon = db.Column(db.String(50))
+    image_path = db.Column(db.String(500))
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
     
@@ -24,6 +25,7 @@ class Category(db.Model):
             'display_name': self.display_name,
             'description': self.description,
             'icon': self.icon,
+            'image_path': self.image_path,
             'created_at': self.created_at.isoformat() if self.created_at else None,
             'updated_at': self.updated_at.isoformat() if self.updated_at else None,
             'objects_count': self.objects.count(),

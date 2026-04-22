@@ -27,15 +27,67 @@ def categories():
 @web.route('/categories/create', methods=['POST'])
 def category_create():
     try:
+        image_path = None
+        if 'image' in request.files:
+            file = request.files['image']
+            if file and file.filename and allowed_file(file.filename):
+                temp_id = f"cat_{datetime.now().timestamp()}"
+                filename = generate_image_filename(file.filename, temp_id)
+                upload_dir = current_app.config.get('UPLOAD_DIR', '/var/lib/prompt_manager/uploads')
+                image_path = process_and_save_image(file, upload_dir, filename)
+        
         category_service.create_category(
             name=request.form['name'],
             display_name=request.form['display_name'],
             description=request.form.get('description'),
-            icon=request.form.get('icon')
+            icon=request.form.get('icon'),
+            image_path=image_path
         )
         flash('Категория создана', 'success')
     except ValueError as e:
         flash(str(e), 'error')
+    return redirect(url_for('web.categories'))
+
+
+@web.route('/categories/<category_id>/edit')
+def category_edit(category_id):
+    cat = category_service.get_category_by_id(category_id)
+    if not cat:
+        flash('Категория не найдена', 'error')
+        return redirect(url_for('web.categories'))
+    return render_template('category_edit.html', category=cat)
+
+
+@web.route('/categories/<category_id>/update', methods=['POST'])
+def category_update(category_id):
+    try:
+        image_path = None
+        keep_image = request.form.get('keep_image') == 'true'
+        
+        if not keep_image and 'image' in request.files:
+            file = request.files['image']
+            if file and file.filename and allowed_file(file.filename):
+                filename = generate_image_filename(file.filename, category_id)
+                upload_dir = current_app.config.get('UPLOAD_DIR', '/var/lib/prompt_manager/uploads')
+                image_path = process_and_save_image(file, upload_dir, filename)
+        
+        update_data = {
+            'name': request.form['name'],
+            'display_name': request.form['display_name'],
+            'description': request.form.get('description'),
+            'icon': request.form.get('icon')
+        }
+        
+        if image_path:
+            update_data['image_path'] = image_path
+        elif keep_image:
+            update_data['image_path'] = request.form.get('current_image_path')
+        
+        category_service.update_category(category_id, **update_data)
+        flash('Категория обновлена', 'success')
+    except ValueError as e:
+        flash(str(e), 'error')
+    
     return redirect(url_for('web.categories'))
 
 
