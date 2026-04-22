@@ -56,13 +56,12 @@
     
     <div class="card">
         <h3 class="card-title">Реквизиты категории</h3>
-        <a href="{{ url_for('web.category_detail', category_id=category.id) }}?modal=add-attribute" class="btn btn-secondary" onclick="openModal('add-attribute'); return false;">Управление реквизитами</a>
+        <button class="btn btn-secondary" data-modal="add-attribute">Управление реквизитами</button>
         
         <h4 style="margin-top: 1rem;">Существующие реквизиты:</h4>
-        {% set attrs = category_service.get_category_attributes(category.id) %}
-        {% if attrs %}
+        {% if attributes %}
         <ul class="attributes-list">
-            {% for attr in attrs %}
+            {% for attr in attributes %}
             <li class="attribute-item">
                 <span><strong>{{ attr.display_name }}</strong> ({{ attr.name }}) - {{ attr.field_type }}</span>
                 <a href="{{ url_for('web.attribute_delete', attribute_id=attr.id) }}" class="btn btn-sm btn-danger" data-confirm="Удалить реквизит?">Удал.</a>
@@ -74,6 +73,67 @@
         {% endif %}
     </div>
 </div>
+
+<div class="modal" id="add-attribute">
+    <div class="modal-content">
+        <div class="modal-header">
+            <h2>Управление реквизитами</h2>
+            <button class="modal-close">&times;</button>
+        </div>
+        
+        <form method="POST" action="{{ url_for('web.attribute_create', category_id=category.id) }}">
+            <div class="form-group">
+                <label class="form-label">Техническое имя</label>
+                <input type="text" name="name" class="form-input" required placeholder="gender">
+            </div>
+            <div class="form-group">
+                <label class="form-label">Отображаемое имя</label>
+                <input type="text" name="display_name" class="form-input" required placeholder="Пол">
+            </div>
+            <div class="form-group">
+                <label class="form-label">Тип поля</label>
+                <select name="field_type" class="form-select" required>
+                    <option value="bool">Да/Нет</option>
+                    <option value="int">Число</option>
+                    <option value="int_list">Число из списка</option>
+                    <option value="str">Текст</option>
+                    <option value="str_list">Выбор из списка</option>
+                </select>
+            </div>
+            <div class="form-group int-list-params" style="display: none;">
+                <label class="form-label">Минимум</label>
+                <input type="number" name="min_value" class="form-input" value="0">
+            </div>
+            <div class="form-group int-list-params" style="display: none;">
+                <label class="form-label">Максимум</label>
+                <input type="number" name="max_value" class="form-input" value="100">
+            </div>
+            <div class="form-group int-list-params" style="display: none;">
+                <label class="form-label">Шаг</label>
+                <input type="number" name="step" class="form-input" value="1">
+            </div>
+            <div class="form-group str-list-params" style="display: none;">
+                <label class="form-label">Варианты (через запятую)</label>
+                <input type="text" name="options" class="form-input" placeholder="мужской, женский">
+            </div>
+            <div class="form-group">
+                <label class="form-label">
+                    <input type="checkbox" name="is_required"> Обязательное поле
+                </label>
+            </div>
+            <button type="submit" class="btn btn-primary">Создать реквизит</button>
+        </form>
+    </div>
+</div>
+
+<script>
+document.querySelector('[name="field_type"]')?.addEventListener('change', function() {
+    const showIntList = this.value === 'int_list';
+    const showStrList = this.value === 'str_list';
+    document.querySelectorAll('.int-list-params').forEach(el => el.style.display = showIntList ? 'block' : 'none');
+    document.querySelectorAll('.str-list-params').forEach(el => el.style.display = showStrList ? 'block' : 'none');
+});
+</script>
 
 <script>
 function previewEditCategoryImage(input) {

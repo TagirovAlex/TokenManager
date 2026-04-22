@@ -212,14 +212,12 @@ prompt_manager/
 - [x] DEFAULT_IMAGE_WIDTH, DEFAULT_IMAGE_HEIGHT
 - [x] DEFAULT_SEEDS, DEFAULT_STEPS, DEFAULT_CFG, DEFAULT_SAMPLER
 
-## Развертывание
+## Развертывание (ГОТОВО)
 
-### deploy/
-- [x] prompt_manager.service - systemd сервис
-- [x] nginx.conf - конфигурация nginx
-
-### install.sh
-- [x] Скрипт автоматической установки
+- [x] deploy/prompt_manager.service - systemd сервис
+- [x] deploy/nginx.conf - конфигурация nginx
+- [x] install.sh - скрипт установки
+- [x] uninstall.sh - скрипт удаления
 
 ## Тесты
 

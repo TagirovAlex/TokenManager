@@ -178,12 +178,18 @@ def objects():
     category_id = request.args.get('category_id')
     cats = category_service.get_all_categories()
     
+    attribute_defs = {}
+    for cat in cats:
+        attrs = category_service.get_category_attributes(cat.id)
+        if attrs:
+            attribute_defs[cat.id] = [a.to_dict() for a in attrs]
+    
     if category_id:
         objs = object_service.get_all_objects(category_id=category_id)
     else:
         objs = object_service.get_all_objects()
     
-    return render_template('objects.html', objects=objs, categories=cats, selected_category=category_id)
+    return render_template('objects.html', objects=objs, categories=cats, selected_category=category_id, attribute_defs=attribute_defs)
 
 
 @web.route('/objects/create', methods=['POST'])

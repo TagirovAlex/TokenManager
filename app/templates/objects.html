@@ -49,15 +49,17 @@
             <h2>Создать объект</h2>
             <button class="modal-close">&times;</button>
         </div>
-        <form method="POST" action="{{ url_for('web.object_create') }}">
+        <form method="POST" action="{{ url_for('web.object_create') }}" enctype="multipart/form-data" id="create-object-form">
             <div class="form-group">
                 <label class="form-label">Категория</label>
-                <select name="category_id" class="form-select" required>
+                <select name="category_id" class="form-select" required onchange="loadCategoryAttributes(this.value)">
+                    <option value="">-- Выберите категорию --</option>
                     {% for cat in categories %}
                     <option value="{{ cat.id }}">{{ cat.display_name }}</option>
                     {% endfor %}
                 </select>
             </div>
+            <div id="category-attributes"></div>
             <div class="form-group">
                 <label class="form-label">Имя</label>
                 <input type="text" name="name" class="form-input" required placeholder="Воин">
@@ -71,11 +73,56 @@
                 <textarea name="description" class="form-textarea" placeholder="Описание объекта"></textarea>
             </div>
             <div class="form-group">
-                <label class="form-label">Путь к изображению</label>
-                <input type="text" name="image_path" class="form-input" placeholder="/uploads/image.jpg">
+                <label class="form-label">Изображение</label>
+                <input type="file" name="image" class="form-input" accept="image/*">
             </div>
             <button type="submit" class="btn btn-primary">Создать</button>
         </form>
     </div>
 </div>
+
+<script>
+const categoryAttributes = {{ attribute_defs|tojson }};
+
+function loadCategoryAttributes(categoryId) {
+    const container = document.getElementById('category-attributes');
+    const attrs = categoryAttributes[categoryId] || [];
+    
+    if (attrs.length === 0) {
+        container.innerHTML = '';
+        return;
+    }
+    
+    let html = '<h4 style="margin: 1rem 0;">Реквизиты</h4>';
+    attrs.forEach(attr => {
+        html += '<div class="form-group">';
+        html += `<label class="form-label">${attr.display_name}</label>`;
+        
+        if (attr.field_type === 'bool') {
+            html += `<select name="attr_${attr.id}" class="form-select">`;
+            html += '<option value="">-- Не указано --</option>';
+            html += '<option value="true">Да</option>';
+            html += '<option value="false">Нет</option>';
+            html += '</select>';
+        } else if (attr.field_type === 'int') {
+            html += `<input type="number" name="attr_${attr.id}" class="form-input" min="${attr.min_value}" max="${attr.max_value}">`;
+        } else if (attr.field_type === 'int_list') {
+            html += `<input type="number" name="attr_${attr.id}" class="form-input" min="${attr.min_value}" max="${attr.max_value}" step="${attr.step || 1}">`;
+        } else if (attr.field_type === 'str') {
+            html += `<input type="text" name="attr_${attr.id}" class="form-input">`;
+        } else if (attr.field_type === 'str_list') {
+            html += `<select name="attr_${attr.id}" class="form-select">`;
+            html += '<option value="">-- Не указано --</option>';
+            (attr.options || []).forEach(opt => {
+                html += `<option value="${opt}">${opt}</option>`;
+            });
+            html += '</select>';
+        }
+        
+        html += '</div>';
+    });
+    
+    container.innerHTML = html;
+}
+</script>
 {% endblock %}
