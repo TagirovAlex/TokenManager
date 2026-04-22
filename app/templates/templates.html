@@ -1,12 +1,15 @@
 {% extends "base.html" %}
+{% from "pagination.html" import pagination, search %}
 
 {% block title %}Шаблоны - Prompt Manager{% endblock %}
 
 {% block content %}
 <div class="page-header">
     <h1 class="page-title">Шаблоны</h1>
-    <button class="btn btn-primary" data-modal="create-template">Добавить шаблон</button>
+    <button class="btn btn-primary btn-sm" data-modal="create-template">Добавить</button>
 </div>
+
+{{ search('web.templates') }}
 
 {% for template in templates %}
 <div class="card">
@@ -59,8 +62,10 @@
                 <textarea name="template_text" class="form-textarea" required placeholder="{char} идет в {loc}"></textarea>
                 <small>Используйте {object_id} как плейсхолдер</small>
             </div>
-            <button type="submit" class="btn btn-primary">Создать</button>
+            <button type="submit" class="btn btn-primary btn-sm">Создать</button>
         </form>
     </div>
 </div>
+
+{{ pagination(pg, 'web.templates') }}
 {% endblock %}

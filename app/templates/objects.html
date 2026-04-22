@@ -1,12 +1,16 @@
 {% extends "base.html" %}
+{% from "pagination.html" import pagination, search %}
 
 {% block title %}Объекты - Prompt Manager{% endblock %}
 
 {% block content %}
 <div class="page-header">
     <h1 class="page-title">Объекты</h1>
-    <button class="btn btn-primary" data-modal="create-object">Добавить объект</button>
+    <button class="btn btn-primary btn-sm" data-modal="create-object">Добавить</button>
 </div>
+
+{% from "pagination.html" import search %}
+{{ search('web.objects') }}
 
 <div class="tabs">
     <a href="{{ url_for('web.objects') }}" class="tab {% if not selected_category %}active{% endif %}">Все</a>
@@ -124,5 +128,7 @@ function loadCategoryAttributes(categoryId) {
     
     container.innerHTML = html;
 }
+
+{{ pagination(pg, 'web.objects') }}
 </script>
 {% endblock %}

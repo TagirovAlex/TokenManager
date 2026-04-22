@@ -305,8 +305,20 @@ def attribute_unlink_from_category(category_id, attribute_id):
 
 @web.route('/objects')
 def objects():
+    from app.models import Object
     category_id = request.args.get('category_id')
+    page, per_page = get_page_args()
+    search = request.args.get('search', '').strip()
+    
     cats = category_service.get_all_categories()
+    
+    query = Object.query
+    if category_id:
+        query = query.filter_by(category_id=category_id)
+    if search:
+        query = search_filter(query, Object, ['name', 'description', 'prompt'], search)
+    
+    result = paginate(query.order_by(Object.created_at.desc()), page, per_page)
     
     attribute_defs = {}
     for cat in cats:
@@ -314,12 +326,7 @@ def objects():
         if attrs:
             attribute_defs[cat.id] = [a.to_dict() for a in attrs]
     
-    if category_id:
-        objs = object_service.get_all_objects(category_id=category_id)
-    else:
-        objs = object_service.get_all_objects()
-    
-    return render_template('objects.html', objects=objs, categories=cats, selected_category=category_id, attribute_defs=attribute_defs)
+    return render_template('objects.html', objects=result['items'], categories=cats, selected_category=category_id, attribute_defs=attribute_defs, pg=result, search=search)
 
 
 @web.route('/objects/create', methods=['POST'])
@@ -450,11 +457,20 @@ def object_delete(object_id):
 
 @web.route('/templates')
 def templates():
-    tmpls = template_service.get_all_templates()
-    for tmpl in tmpls:
+    from app.models import Template
+    page, per_page = get_page_args()
+    search = request.args.get('search', '').strip()
+    
+    query = Template.query
+    if search:
+        query = search_filter(query, Template, ['name', 'description', 'template_text'], search)
+    
+    result = paginate(query.order_by(Template.created_at.desc()), page, per_page)
+    
+    for tmpl in result['items']:
         items = template_service.get_template_items(tmpl.id)
         tmpl.items = items
-    return render_template('templates.html', templates=tmpls)
+    return render_template('templates.html', templates=result['items'], pg=result, search=search)
 
 
 @web.route('/templates/create', methods=['POST'])
@@ -572,9 +588,17 @@ def generator():
 
 @web.route('/prompts')
 def prompts():
+    from app.models import TemplateResult
     from app.services import generator_service
-    results = generator_service.get_results()
-    return render_template('prompts.html', results=results)
+    page, per_page = get_page_args()
+    search = request.args.get('search', '').strip()
+    
+    query = TemplateResult.query
+    if search:
+        query = search_filter(query, TemplateResult, ['name', 'description', 'generated_prompt'], search)
+    
+    result = paginate(query.order_by(TemplateResult.created_at.desc()), page, per_page)
+    return render_template('prompts.html', results=result['items'], pg=result, search=search)
 
 
 @web.route('/prompts/save', methods=['POST'])

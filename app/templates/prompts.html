@@ -1,12 +1,15 @@
 {% extends "base.html" %}
+{% from "pagination.html" import pagination, search %}
 
 {% block title %}Сохраненные промты - Prompt Manager{% endblock %}
 
 {% block content %}
 <div class="page-header">
-    <h1 class="page-title">Сохраненные промты</h1>
-    <a href="{{ url_for('web.generator') }}" class="btn btn-primary">Создать новый</a>
+    <h1 class="page-title">Промты</h1>
+    <a href="{{ url_for('web.generator') }}" class="btn btn-primary btn-sm">Создать</a>
 </div>
+
+{{ search('web.prompts') }}
 
 {% if results %}
 <div class="prompts-grid">
@@ -97,4 +100,6 @@
     margin-bottom: 0.5rem;
 }
 </style>
+
+{{ pagination(pg, 'web.prompts') }}
 {% endblock %}
