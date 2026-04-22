@@ -20,7 +20,7 @@ echo "[1/8] Обновление системы..."
 apt update && apt upgrade -y
 
 echo "[2/8] Установка зависимостей..."
-apt install -y python3.11 python3.11-venv python3-pip postgresql nginx git openssl
+apt install -y python3.11 python3.11-venv python3-pip postgresql nginx git openssl libpq-dev
 
 echo "[3/8] Настройка PostgreSQL..."
 systemctl enable postgresql
@@ -47,8 +47,8 @@ cp -r . /opt/prompt_manager/
 
 python3.11 -m venv venv
 source venv/bin/activate
-pip install --upgrade pip
-pip install -r requirements.txt
+pip install --upgrade pip setuptools wheel
+pip install --no-cache-dir -r requirements.txt
 
 cat > .env << EOF
 SECRET_KEY=$(openssl rand -base64 32)
