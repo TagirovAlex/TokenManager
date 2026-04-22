@@ -1,2 +1,2 @@
-from . import web
-from . import auth
+from .web import web
+from .auth import auth
