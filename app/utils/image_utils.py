@@ -74,4 +74,4 @@ def process_and_save_image(file, upload_dir, filename):
     else:
         img.save(output_path)
     
-    return f"/uploads/{filename}"
+    return filename
