@@ -13,19 +13,31 @@
     {% for result in results %}
     <div class="card prompt-card">
         {% if result.image_path %}
-        <img src="{{ url_for('serve_upload', filename=result.image_path) }}" class="prompt-image" alt="Result">
+        <a href="{{ url_for('web.prompts_edit', result_id=result.id) }}">
+            <img src="{{ url_for('serve_upload', filename=result.image_path) }}" class="prompt-image" alt="Result">
+        </a>
         {% endif %}
+        
+        {% if result.name %}
+        <div class="prompt-name">{{ result.name }}</div>
+        {% endif %}
+        
+        {% if result.description %}
+        <div class="prompt-description">{{ result.description }}</div>
+        {% endif %}
+        
         <div class="prompt-text">{{ result.generated_prompt }}</div>
         <div class="prompt-meta">
             <small>{{ result.created_at.strftime('%Y-%m-%d %H:%M') if result.created_at else '' }}</small>
         </div>
         <div class="actions">
+            <a href="{{ url_for('web.prompts_edit', result_id=result.id) }}" class="btn btn-sm btn-secondary">Ред.</a>
             <button class="btn btn-sm btn-secondary" onclick="copyToClipboard('{{ result.generated_prompt }}')">Копировать</button>
             <form method="POST" action="{{ url_for('web.comfyui_send') }}" style="display: inline;">
                 <input type="hidden" name="prompt" value="{{ result.generated_prompt }}">
                 <button type="submit" class="btn btn-sm btn-primary">В ComfyUI</button>
             </form>
-            <a href="{{ url_for('web.prompts_delete', result_id=result.id) }}" class="btn btn-sm btn-danger" data-confirm="Удалить?">Удалить</a>
+            <a href="{{ url_for('web.prompts_delete', result_id=result.id) }}" class="btn btn-sm btn-danger" data-confirm="Удалить?">Удал.</a>
         </div>
     </div>
     {% endfor %}
@@ -41,7 +53,7 @@
 <style>
 .prompts-grid {
     display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+    grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));
     gap: 1rem;
     margin-top: 1rem;
 }
@@ -53,6 +65,19 @@
 .prompt-image {
     max-width: 100%;
     border-radius: 0.5rem;
+    margin-bottom: 0.5rem;
+    display: block;
+}
+
+.prompt-name {
+    font-weight: bold;
+    font-size: 1.1rem;
+    margin-bottom: 0.25rem;
+}
+
+.prompt-description {
+    color: var(--text-muted);
+    font-size: 0.875rem;
     margin-bottom: 0.5rem;
 }
 

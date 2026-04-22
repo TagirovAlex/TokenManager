@@ -179,8 +179,10 @@ class TemplateResult(db.Model):
     __tablename__ = 'template_results'
     
     id = db.Column(db.String(36), primary_key=True, default=lambda: str(uuid.uuid4()))
-    template_id = db.Column(db.String(36), db.ForeignKey('templates.id'), nullable=False)
+    template_id = db.Column(db.String(36), db.ForeignKey('templates.id'), nullable=True)
     generated_prompt = db.Column(db.Text, nullable=False)
+    name = db.Column(db.String(255))
+    description = db.Column(db.Text)
     image_path = db.Column(db.String(500))
     comfyui_workflow = db.Column(db.JSON)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)

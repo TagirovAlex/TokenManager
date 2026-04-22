@@ -53,13 +53,31 @@ def get_result_by_id(result_id):
     return db.session.get(TemplateResult, result_id)
 
 
-def save_result(template_id, generated_prompt, image_path=None):
+def save_result(template_id, generated_prompt, name=None, description=None, image_path=None):
     result = TemplateResult(
         template_id=template_id,
         generated_prompt=generated_prompt,
+        name=name,
+        description=description,
         image_path=image_path
     )
     db.session.add(result)
+    db.session.commit()
+    return result
+
+
+def update_result(result_id, name=None, description=None, image_path=None, generated_prompt=None):
+    result = db.session.get(TemplateResult, result_id)
+    if not result:
+        raise ValueError('Result not found')
+    if name is not None:
+        result.name = name
+    if description is not None:
+        result.description = description
+    if image_path is not None:
+        result.image_path = image_path
+    if generated_prompt is not None:
+        result.generated_prompt = generated_prompt
     db.session.commit()
     return result
 

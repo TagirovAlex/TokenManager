@@ -30,13 +30,29 @@
             </div>
             <div class="form-group">
                 <label class="form-label">Тип поля *</label>
-                <select name="field_type" class="form-select" required>
+                <select name="field_type" class="form-select" required id="field-type-select">
                     <option value="bool">Да/Нет (checkbox)</option>
                     <option value="int">Число</option>
                     <option value="int_list">Число из списка</option>
                     <option value="str">Текст</option>
                     <option value="str_list">Выбор из списка</option>
                 </select>
+            </div>
+            <div class="form-group int-list-params" style="display:none;">
+                <label class="form-label">Минимум</label>
+                <input type="number" name="min_value" class="form-input" value="0">
+            </div>
+            <div class="form-group int-list-params" style="display:none;">
+                <label class="form-label">Максимум</label>
+                <input type="number" name="max_value" class="form-input" value="100">
+            </div>
+            <div class="form-group int-list-params" style="display:none;">
+                <label class="form-label">Шаг</label>
+                <input type="number" name="step" class="form-input" value="1">
+            </div>
+            <div class="form-group str-list-params" style="display:none;">
+                <label class="form-label">Варианты (через запятую)</label>
+                <input type="text" name="options" class="form-input" placeholder="вариант1, вариант2, вариант3">
             </div>
             <div class="form-group">
                 <label class="form-label">
@@ -83,4 +99,13 @@
         {% endif %}
     </div>
 </div>
+
+<script>
+document.getElementById('field-type-select').addEventListener('change', function() {
+    const showIntList = this.value === 'int_list';
+    const showStrList = this.value === 'str_list';
+    document.querySelectorAll('.int-list-params').forEach(el => el.style.display = showIntList ? 'block' : 'none');
+    document.querySelectorAll('.str-list-params').forEach(el => el.style.display = showStrList ? 'block' : 'none');
+});
+</script>
 {% endblock %}

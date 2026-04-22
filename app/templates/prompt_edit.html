@@ -1,0 +1,55 @@
+{% extends "base.html" %}
+
+{% block title %}Редактировать промт - Prompt Manager{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <h1 class="page-title">Редактировать промт</h1>
+    <a href="{{ url_for('web.prompts') }}" class="btn btn-secondary">Назад</a>
+</div>
+
+<form method="POST" action="{{ url_for('web.prompts_edit', result_id=result.id) }}">
+    <div class="card">
+        <div class="form-group">
+            <label class="form-label">Название</label>
+            <input type="text" name="name" class="form-input" value="{{ result.name or '' }}" placeholder="Название промта">
+        </div>
+        <div class="form-group">
+            <label class="form-label">Описание</label>
+            <textarea name="description" class="form-textarea" placeholder="Описание промта">{{ result.description or '' }}</textarea>
+        </div>
+        <div class="form-group">
+            <label class="form-label">Промт *</label>
+            <textarea name="generated_prompt" class="form-textarea" required style="font-family: monospace;">{{ result.generated_prompt }}</textarea>
+        </div>
+        <button type="submit" class="btn btn-primary">Сохранить</button>
+    </div>
+</form>
+
+<div class="card" style="margin-top: 1rem;">
+    <h3 class="card-title">Изображение</h3>
+    {% if result.image_path %}
+    <img src="{{ url_for('serve_upload', filename=result.image_path) }}" style="max-width: 400px; border-radius: 0.5rem;">
+    {% else %}
+    <p class="text-muted">Изображение не прикреплено</p>
+    {% endif %}
+    
+    <form method="POST" action="{{ url_for('web.prompts_upload_image', result_id=result.id) }}" enctype="multipart/form-data" style="margin-top: 1rem;">
+        <div class="form-group">
+            <label class="form-label">Загрузить изображение</label>
+            <input type="file" name="image" class="form-input" accept="image/*">
+        </div>
+        <button type="submit" class="btn btn-secondary">Загрузить</button>
+    </form>
+</div>
+
+<div class="card" style="margin-top: 1rem;">
+    <h3 class="card-title">Действия</h3>
+    <button class="btn btn-secondary" onclick="copyToClipboard('{{ result.generated_prompt }}')">Копировать промт</button>
+    <form method="POST" action="{{ url_for('web.comfyui_send') }}" style="display: inline;">
+        <input type="hidden" name="prompt" value="{{ result.generated_prompt }}">
+        <button type="submit" class="btn btn-primary">Отправить в ComfyUI</button>
+    </form>
+    <a href="{{ url_for('web.prompts_delete', result_id=result.id) }}" class="btn btn-danger" data-confirm="Удалить промт?">Удалить</a>
+</div>
+{% endblock %}

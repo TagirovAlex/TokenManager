@@ -9,6 +9,7 @@ from app.services import (
     admin_service
 )
 from app.utils.image_utils import allowed_file, process_and_save_image, generate_image_filename
+from app.utils import paginate, get_page_args, search_filter
 
 web = Blueprint('web', __name__)
 
@@ -21,8 +22,14 @@ def index():
 
 @web.route('/categories')
 def categories():
-    cats = category_service.get_all_categories()
-    return render_template('categories.html', categories=cats)
+    from app.models import Category
+    page, per_page = get_page_args()
+    search = request.args.get('search', '').strip()
+    query = Category.query
+    if search:
+        query = search_filter(query, Category, ['name', 'display_name', 'description'], search)
+    result = paginate(query.order_by(Category.created_at.desc()), page, per_page)
+    return render_template('categories.html', categories=result['items'], pagination=result, search=search)
 
 
 @web.route('/categories/create', methods=['POST'])
@@ -572,6 +579,8 @@ def prompts():
 @web.route('/prompts/save', methods=['POST'])
 def prompts_save():
     prompt = request.form.get('prompt')
+    name = request.form.get('name')
+    description = request.form.get('description')
     template_id = request.form.get('template_id')
     image_path = request.form.get('image_path')
     
@@ -584,6 +593,8 @@ def prompts_save():
         generator_service.save_result(
             template_id=template_id,
             generated_prompt=prompt,
+            name=name,
+            description=description,
             image_path=image_path
         )
         flash('Промт сохранен', 'success')
@@ -591,6 +602,61 @@ def prompts_save():
         flash(str(e), 'error')
     
     return redirect(url_for('web.prompts'))
+
+
+@web.route('/prompts/edit/<result_id>', methods=['GET', 'POST'])
+def prompts_edit(result_id):
+    from app.services import generator_service
+    result = generator_service.get_result_by_id(result_id)
+    if not result:
+        flash('Промт не найден', 'error')
+        return redirect(url_for('web.prompts'))
+    
+    if request.method == 'POST':
+        name = request.form.get('name')
+        description = request.form.get('description')
+        generated_prompt = request.form.get('generated_prompt')
+        
+        try:
+            generator_service.update_result(
+                result_id=result_id,
+                name=name,
+                description=description,
+                generated_prompt=generated_prompt
+            )
+            flash('Промт обновлен', 'success')
+            return redirect(url_for('web.prompts'))
+        except ValueError as e:
+            flash(str(e), 'error')
+    
+    return render_template('prompt_edit.html', result=result)
+
+
+@web.route('/prompts/upload-image/<result_id>', methods=['POST'])
+def prompts_upload_image(result_id):
+    from app.services import generator_service
+    from flask import current_app
+    from app.utils import allowed_file, process_and_save_image
+    
+    result = generator_service.get_result_by_id(result_id)
+    if not result:
+        flash('Промт не найден', 'error')
+        return redirect(url_for('web.prompts'))
+    
+    file = request.files.get('image')
+    if not file or not file.filename:
+        flash('Выберите изображение', 'error')
+        return redirect(url_for('web.prompts_edit', result_id=result_id))
+    
+    if file and allowed_file(file.filename):
+        filename = f"result_{result_id}_{file.filename}"
+        upload_dir = current_app.config.get('UPLOAD_DIR')
+        image_path = process_and_save_image(file, upload_dir, filename)
+        
+        generator_service.update_result(result_id, image_path=image_path)
+        flash('Изображение добавлено', 'success')
+    
+    return redirect(url_for('web.prompts_edit', result_id=result_id))
 
 
 @web.route('/prompts/delete/<result_id>')
