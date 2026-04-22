@@ -83,7 +83,7 @@
                     <td>{{ attr.name }}</td>
                     <td>{{ attr.display_name }}</td>
                     <td>{{ attr.field_type }}</td>
-                    <td>{{ attr.field_type }}</td>
+                    <td>{% for link in attr.category_links %}{{ link.category.display_name }}{% if not loop.last %}, {% endif %}{% endfor %}</td>
                     <td>
                         <a href="{{ url_for('web.attribute_edit', attribute_id=attr.id) }}" class="btn btn-sm btn-secondary">Ред.</a>
                         <a href="{{ url_for('web.attribute_delete', attribute_id=attr.id) }}" class="btn btn-sm btn-danger" data-confirm="Удалить реквизит?">Удал.</a>
@@ -99,11 +99,13 @@
 </div>
 
 <script>
-document.getElementById('field-type-select').addEventListener('change', function() {
-    const showIntList = this.value === 'int_list';
-    const showStrList = this.value === 'str_list';
-    document.querySelectorAll('.int-list-params').forEach(el => el.style.display = showIntList ? 'block' : 'none');
-    document.querySelectorAll('.str-list-params').forEach(el => el.style.display = showStrList ? 'block' : 'none');
+document.addEventListener('DOMContentLoaded', function() {
+    document.getElementById('field-type-select').addEventListener('change', function() {
+        const showIntList = this.value === 'int_list';
+        const showStrList = this.value === 'str_list';
+        document.querySelectorAll('.int-list-params').forEach(el => el.style.display = showIntList ? 'block' : 'none');
+        document.querySelectorAll('.str-list-params').forEach(el => el.style.display = showStrList ? 'block' : 'none');
+    });
 });
 </script>
 {% endblock %}

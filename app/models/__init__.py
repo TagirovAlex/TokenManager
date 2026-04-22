@@ -37,7 +37,7 @@ class Object(db.Model):
     __tablename__ = 'objects'
     
     id = db.Column(db.String(36), primary_key=True, default=lambda: str(uuid.uuid4()))
-    category_id = db.Column(db.String(36), db.ForeignKey('categories.id'), nullable=False)
+    category_id = db.Column(db.String(36), db.ForeignKey('categories.id'), nullable=True)
     name = db.Column(db.String(255), nullable=False)
     description = db.Column(db.Text)
     prompt = db.Column(db.Text, nullable=False)

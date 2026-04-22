@@ -332,12 +332,12 @@ def objects():
 @web.route('/objects/create', methods=['POST'])
 def object_create():
     try:
-        image_path = request.form.get('image_path')
+        image_path = None
         
         if 'image' in request.files:
             file = request.files['image']
             if file and file.filename and allowed_file(file.filename):
-                category_id = request.form['category_id']
+                category_id = request.form.get('category_id') or None
                 temp_id = f"temp_{datetime.now().timestamp()}"
                 filename = generate_image_filename(file.filename, temp_id)
                 upload_dir = current_app.config.get('UPLOAD_DIR', '/var/lib/prompt_manager/uploads')
@@ -361,7 +361,7 @@ def object_create():
                 attributes.append(attr_data)
         
         obj = object_service.create_object(
-            category_id=request.form['category_id'],
+            category_id=request.form.get('category_id') or None,
             name=request.form['name'],
             prompt=request.form['prompt'],
             description=request.form.get('description'),

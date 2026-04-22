@@ -56,8 +56,8 @@
         <form method="POST" action="{{ url_for('web.object_create') }}" enctype="multipart/form-data" id="create-object-form">
             <div class="form-group">
                 <label class="form-label">Категория</label>
-                <select name="category_id" class="form-select" required onchange="loadCategoryAttributes(this.value)">
-                    <option value="">-- Выберите категорию --</option>
+                <select name="category_id" class="form-select" onchange="loadCategoryAttributes(this.value)">
+                    <option value="">-- Без категории --</option>
                     {% for cat in categories %}
                     <option value="{{ cat.id }}">{{ cat.display_name }}</option>
                     {% endfor %}

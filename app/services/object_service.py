@@ -19,8 +19,8 @@ def get_object_by_id(object_id):
 
 def create_object(category_id, name, prompt, description=None, 
                   image_path=None, is_active=True, attributes=None):
-    if not category_id or not name or not prompt:
-        raise ValueError('category_id, name and prompt are required')
+    if not name or not prompt:
+        raise ValueError('name and prompt are required')
     
     obj = Object(
         category_id=category_id,
