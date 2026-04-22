@@ -491,6 +491,16 @@ def template_add_item(template_id):
     return redirect(url_for('web.template_edit', template_id=template_id))
 
 
+@web.route('/templates/<template_id>/remove-item/<item_id>')
+def template_remove_item(template_id, item_id):
+    try:
+        template_service.remove_template_item(item_id)
+        flash('Элемент удален', 'success')
+    except ValueError as e:
+        flash(str(e), 'error')
+    return redirect(url_for('web.template_edit', template_id=template_id))
+
+
 @web.route('/generator', methods=['GET', 'POST'])
 def generator():
     cats = category_service.get_all_categories()

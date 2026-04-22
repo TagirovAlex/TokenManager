@@ -79,3 +79,7 @@ def delete_template_item(item_id):
         raise ValueError('TemplateItem not found')
     db.session.delete(item)
     db.session.commit()
+
+
+def remove_template_item(item_id):
+    delete_template_item(item_id)
