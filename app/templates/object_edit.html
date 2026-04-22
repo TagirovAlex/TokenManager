@@ -5,7 +5,7 @@
 {% block content %}
 <div class="page-header">
     <h1 class="page-title">Редактировать объект</h1>
-    <a href="{{ url_for('web.objects') }}" class="btn btn-secondary">Назад</a>
+    <a href="{{ url_for('web.category_detail', category_id=object.category_id) }}" class="btn btn-secondary">Назад к категории</a>
 </div>
 
 <div class="card" style="max-width: 600px;">
@@ -30,11 +30,55 @@
             <label class="form-label">Описание</label>
             <textarea name="description" class="form-textarea">{{ object.description or '' }}</textarea>
         </div>
+        
+        {% if attributes %}
+        <h4 style="margin: 1rem 0;">Реквизиты</h4>
+        {% for attr in attributes %}
+        {% set current_value = None %}
+        {% for av in object.attr_values %}
+            {% if av.attribute_def_id == attr.id %}
+                {% set current_value = av %}
+            {% endif %}
+        {% endfor %}
+        <div class="form-group">
+            <label class="form-label">{{ attr.display_name }}</label>
+            {% if attr.field_type == 'bool' %}
+            <select name="attr_{{ attr.id }}" class="form-select">
+                <option value="">-- Не указано --</option>
+                <option value="true" {% if current_value and current_value.bool_value %}selected{% endif %}>Да</option>
+                <option value="false" {% if current_value and current_value.bool_value == False %}selected{% endif %}>Нет</option>
+            </select>
+            {% elif attr.field_type == 'int' %}
+            <input type="number" name="attr_{{ attr.id }}" class="form-input" 
+                   value="{{ current_value.int_value if current_value else '' }}"
+                   min="{{ attr.min_value }}" max="{{ attr.max_value }}">
+            {% elif attr.field_type == 'int_list' %}
+            <input type="number" name="attr_{{ attr.id }}" class="form-input" 
+                   value="{{ current_value.int_value if current_value else '' }}"
+                   min="{{ attr.min_value }}" max="{{ attr.max_value }}" step="{{ attr.step or 1 }}">
+            {% elif attr.field_type == 'str' %}
+            <input type="text" name="attr_{{ attr.id }}" class="form-input" 
+                   value="{{ current_value.str_value if current_value else '' }}">
+            {% elif attr.field_type == 'str_list' %}
+            <select name="attr_{{ attr.id }}" class="form-select">
+                <option value="">-- Не указано --</option>
+                {% for opt in attr.options or [] %}
+                <option value="{{ opt }}" {% if current_value and current_value.str_value == opt %}selected{% endif %}>{{ opt }}</option>
+                {% endfor %}
+            </select>
+            {% endif %}
+        </div>
+        {% endfor %}
+        {% endif %}
+        
         <div class="form-group">
             <label class="form-label">Изображение</label>
             {% if object.image_path %}
             <div style="margin-bottom: 10px;">
                 <img src="{{ object.image_path }}" style="max-width: 200px; max-height: 200px; border-radius: 8px;">
+                <label style="display: block; margin-top: 5px;">
+                    <input type="checkbox" name="keep_image" value="true" checked> Сохранить текущее изображение
+                </label>
             </div>
             {% endif %}
             <input type="file" name="image" class="form-input" accept="image/*" onchange="previewImage(this)">

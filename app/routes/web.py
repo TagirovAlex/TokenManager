@@ -1,5 +1,6 @@
 from datetime import datetime
 from flask import Blueprint, render_template, request, redirect, url_for, flash, current_app
+from app import db
 from app.services import (
     category_service,
     object_service,
@@ -55,7 +56,8 @@ def category_edit(category_id):
     if not cat:
         flash('Категория не найдена', 'error')
         return redirect(url_for('web.categories'))
-    return render_template('category_edit.html', category=cat)
+    attrs = category_service.get_category_attributes(category_id)
+    return render_template('category_edit.html', category=cat, attributes=attrs, category_service=category_service)
 
 
 @web.route('/categories/<category_id>/update', methods=['POST'])
@@ -241,13 +243,15 @@ def object_edit(object_id):
         return redirect(url_for('web.objects'))
     
     cats = category_service.get_all_categories()
-    return render_template('object_edit.html', object=obj, categories=cats)
+    attrs = category_service.get_category_attributes(obj.category_id)
+    return render_template('object_edit.html', object=obj, categories=cats, attributes=attrs)
 
 
 @web.route('/objects/update/<object_id>', methods=['POST'])
 def object_update(object_id):
     try:
-        image_path = request.form.get('image_path')
+        keep_image = request.form.get('keep_image') == 'true'
+        image_path = None if not keep_image else request.form.get('image_path')
         
         if 'image' in request.files:
             file = request.files['image']
@@ -264,9 +268,36 @@ def object_update(object_id):
             image_path=image_path,
             category_id=request.form['category_id']
         )
+        
+        from app.models import AttrValue, AttributeDef
+        existing = AttrValue.query.filter_by(object_id=object_id).all()
+        for av in existing:
+            db.session.delete(av)
+        db.session.commit()
+        
+        for key, value in request.form.items():
+            if key.startswith('attr_') and value:
+                attr_id = key.replace('attr_', '')
+                attr_data = {'attribute_def_id': attr_id, 'object_id': object_id}
+                if value == 'true':
+                    attr_data['bool_value'] = True
+                elif value == 'false':
+                    attr_data['bool_value'] = False
+                elif value.isdigit():
+                    attr_data['int_value'] = int(value)
+                else:
+                    attr_data['str_value'] = value
+                av = AttrValue(**attr_data)
+                db.session.add(av)
+        db.session.commit()
+        
         flash('Объект обновлен', 'success')
     except ValueError as e:
         flash(str(e), 'error')
+    
+    obj = object_service.get_object_by_id(object_id)
+    if obj:
+        return redirect(url_for('web.category_detail', category_id=obj.category_id))
     return redirect(url_for('web.objects'))
 
 

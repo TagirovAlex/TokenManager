@@ -8,7 +8,8 @@
     <a href="{{ url_for('web.categories') }}" class="btn btn-secondary">Назад</a>
 </div>
 
-<div class="card" style="max-width: 600px;">
+<div class="grid grid-2">
+    <div class="card">
     <form method="POST" action="{{ url_for('web.category_update', category_id=category.id) }}" enctype="multipart/form-data">
         <div class="form-group">
             <label class="form-label">Имя (techname)</label>
@@ -51,6 +52,27 @@
             <a href="{{ url_for('web.category_delete', category_id=category.id) }}" class="btn btn-danger" data-confirm="Удалить категорию и все её объекты ({{ category.objects_count }} шт.)?">Удалить категорию</a>
         </div>
     </form>
+    </div>
+    
+    <div class="card">
+        <h3 class="card-title">Реквизиты категории</h3>
+        <a href="{{ url_for('web.category_detail', category_id=category.id) }}?modal=add-attribute" class="btn btn-secondary" onclick="openModal('add-attribute'); return false;">Управление реквизитами</a>
+        
+        <h4 style="margin-top: 1rem;">Существующие реквизиты:</h4>
+        {% set attrs = category_service.get_category_attributes(category.id) %}
+        {% if attrs %}
+        <ul class="attributes-list">
+            {% for attr in attrs %}
+            <li class="attribute-item">
+                <span><strong>{{ attr.display_name }}</strong> ({{ attr.name }}) - {{ attr.field_type }}</span>
+                <a href="{{ url_for('web.attribute_delete', attribute_id=attr.id) }}" class="btn btn-sm btn-danger" data-confirm="Удалить реквизит?">Удал.</a>
+            </li>
+            {% endfor %}
+        </ul>
+        {% else %}
+        <p class="text-muted">Реквизитов пока нет</p>
+        {% endif %}
+    </div>
 </div>
 
 <script>
