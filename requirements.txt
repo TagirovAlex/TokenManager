@@ -3,6 +3,7 @@
 
 flask
 flask-sqlalchemy
+flask-wtf
 sqlalchemy
 psycopg2-binary
 alembic
@@ -11,3 +12,4 @@ gunicorn
 requests
 click
 werkzeug
+wtforms

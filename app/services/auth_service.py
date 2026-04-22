@@ -1,5 +1,14 @@
+import re
 from app import db
 from app.models import User
+
+MIN_PASSWORD_LENGTH = 8
+
+
+def _validate_password(password):
+    if len(password) < MIN_PASSWORD_LENGTH:
+        raise ValueError(f'Password must be at least {MIN_PASSWORD_LENGTH} characters')
+    return True
 
 
 def get_user_by_id(user_id):
@@ -15,6 +24,8 @@ def get_user_by_email(email):
 
 
 def create_user(username, email, password, is_admin=False):
+    _validate_password(password)
+    
     if User.query.filter_by(username=username).first():
         raise ValueError('Username already exists')
     
@@ -51,6 +62,7 @@ def update_user(user_id, **kwargs):
         user.email = kwargs['email']
     
     if 'password' in kwargs:
+        _validate_password(kwargs['password'])
         user.set_password(kwargs['password'])
     
     if 'is_admin' in kwargs:

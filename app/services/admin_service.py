@@ -1,6 +1,8 @@
 import os
 import shutil
 import tarfile
+import subprocess
+import re
 from datetime import datetime
 from app import db
 from app.models import Category, Object, Template, TemplateResult
@@ -20,8 +22,17 @@ def _ensure_dir(path):
         os.makedirs(path)
 
 
+def _validate_db_uri(uri):
+    pattern = r'^postgresql://[^:]+:[^@]+@[^:]+:\d+/[a-zA-Z0-9_]+$'
+    if not re.match(pattern, uri):
+        raise ValueError('Invalid database URI format')
+    return True
+
+
 def create_backup(backup_dir, upload_dir, db_uri):
     _ensure_dir(backup_dir)
+    
+    _validate_db_uri(db_uri)
     
     timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
     backup_name = f"prompt_manager_{timestamp}"
@@ -30,9 +41,21 @@ def create_backup(backup_dir, upload_dir, db_uri):
     _ensure_dir(backup_path)
     
     if db_uri.startswith('postgresql://'):
-        db_name = db_uri.split('/')[-1]
-        export_cmd = f'pg_dump {db_name} > {os.path.join(backup_path, "database.sql")}'
-        os.system(export_cmd)
+        match = re.search(r'postgresql://([^:]+):([^@]+)@([^:]+):(\d+)/(.+)', db_uri)
+        if match:
+            db_user, db_pass, db_host, db_port, db_name = match.groups()
+            sql_file = os.path.join(backup_path, 'database.sql')
+            env = os.environ.copy()
+            env['PGPASSWORD'] = db_pass
+            try:
+                subprocess.run(
+                    ['pg_dump', '-h', db_host, '-p', db_port, '-U', db_user, '-f', sql_file, db_name],
+                    env=env,
+                    check=True,
+                    capture_output=True
+                )
+            except Exception as e:
+                pass
     
     if upload_dir and os.path.exists(upload_dir):
         images_backup = os.path.join(backup_path, 'uploads.tar')

@@ -46,6 +46,7 @@
             <button class="modal-close">&times;</button>
         </div>
         <form method="POST" action="{{ url_for('web.template_create') }}">
+            {{ csrf_token() }}
             <div class="form-group">
                 <label class="form-label">Название</label>
                 <input type="text" name="name" class="form-input" required placeholder="Персонаж в локации">

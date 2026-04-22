@@ -9,6 +9,7 @@
 
 <div class="card" style="max-width: 400px; margin: 0 auto;">
     <form method="POST" action="{{ url_for('auth.login') }}">
+        {{ csrf_token() }}
         <div class="form-group">
             <label class="form-label">Имя пользователя</label>
             <input type="text" name="username" class="form-input" required>

@@ -50,6 +50,7 @@
             <button class="modal-close">&times;</button>
         </div>
         <form method="POST" action="{{ url_for('web.object_create') }}">
+            {{ csrf_token() }}
             <div class="form-group">
                 <label class="form-label">Категория</label>
                 <select name="category_id" class="form-select" required>

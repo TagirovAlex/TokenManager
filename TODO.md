@@ -1,48 +1,63 @@
 # Prompt Manager System - TODO
 
-## Описание функционала
+## Описание системы
 
-### Основной функционал (по ТЗ)
-- [x] Система хранения и генерации промтов
-- [x] Модульная система категорий (персонаж, локация, действие, одежда и т.д.)
-- [x] В каждой категории - список объектов с идентификатором, описанием, промтом, картинкой
-- [x] Генератор промтов - выбор категорий и объектов, формирование промта
-- [x] Шаблоны сохраняются в базу
-- [x] Прикрепление картинок результатов генерации
-- [x] Интеграция с ComfyUI
-- [x] Полная модульность без жестких привязок
-- [x] Динамические атрибуты для объектов (пол, возраст, рост и т.д.)
-- [x] Административные функции (бэкап, очистка)
+Система хранения и генерации промтов для локальной генерации изображений и видео через веб-интерфейс.
 
-### Технологический стек
-- [x] Python 3.11+
-- [x] Flask (app factory)
-- [x] SQLAlchemy ORM
-- [x] PostgreSQL
-- [x] Debian 12+ (без Docker)
+## Технологический стек
+
+| Компонент | Выбор |
+|-----------|-------|
+| OS | Debian 12+ |
+| Python | 3.11+ |
+| Web Framework | Flask (app factory) |
+| ORM | SQLAlchemy |
+| База данных | PostgreSQL |
+| WSGI | Gunicorn |
+| Управление сервисом | systemd |
+| Проксирование | nginx |
 
 ## Структура проекта
+
 ```
 prompt_manager/
 ├── app/
-│   ├── __init__.py           # Flask app factory
-│   ├── config.py            # Конфигурация
-│   ├── models/              # SQLAlchemy модели
-│   ├── routes/              # API и Web routes
-│   ├── services/             # Бизнес-логика
+│   ├── __init__.py           # Flask App Factory
+│   ├── config.py             # Конфигурация
+│   ├── models/               # SQLAlchemy модели
+│   │   └── __init__.py
+│   ├── routes/               # Маршруты
+│   │   ├── web.py            # Веб-интерфейс
+│   │   └── auth.py          # Авторизация
+│   ├── services/            # Бизнес-логика
+│   │   ├── auth_service.py
+│   │   ├── category_service.py
+│   │   ├── object_service.py
+│   │   ├── template_service.py
+│   │   ├── generator_service.py
+│   │   ├── admin_service.py
+│   │   └── comfyui_service.py
 │   ├── static/              # CSS, JS
-│   └── templates/           # HTML шаблоны
+│   ├── templates/           # HTML шаблоны
+│   └── utils/               # Утилиты
 ├── migrations/              # Alembic
 ├── tests/                  # Тесты
-├── cli.py                  # CLI интерфейс
-├── init_data.py           # Инициализация данных
-├── run.py                  # Точка входа
-└── requirements.txt
+├── deploy/                 # Файлы развертывания
+│   ├── prompt_manager.service
+│   └── nginx.conf
+├── requirements.txt
+├── run.py                   # Точка входа
+├── install.sh               # Скрипт установки
+├── init_data.py            # Инициализация данных
+├── .env.example
+├── SPEC.md                 # Техническое задание
+├── AGENTS.md               # Правила для AI-агентов
+└── README.md              # Документация
 ```
 
 ## Модели данных
 
-### Category - Категории
+### Category (Категории)
 - [x] id (UUID)
 - [x] name (technename)
 - [x] display_name
@@ -50,7 +65,7 @@ prompt_manager/
 - [x] icon
 - [x] created_at, updated_at
 
-### Object - Объекты
+### Object (Объекты)
 - [x] id (UUID)
 - [x] category_id (FK)
 - [x] name
@@ -60,7 +75,7 @@ prompt_manager/
 - [x] is_active
 - [x] created_at, updated_at
 
-### AttributeDef - Определения атрибутов
+### AttributeDef (Определения атрибутов)
 - [x] id (UUID)
 - [x] category_id (FK)
 - [x] name
@@ -70,27 +85,27 @@ prompt_manager/
 - [x] options (JSON)
 - [x] is_required
 
-### AttrValue - Значения атрибутов
+### AttrValue (Значения атрибутов)
 - [x] id (UUID)
 - [x] object_id (FK)
 - [x] attribute_def_id (FK)
 - [x] bool_value / int_value / str_value
 
-### Template - Шаблоны
+### Template (Шаблоны)
 - [x] id (UUID)
 - [x] name
 - [x] description
 - [x] template_text
 - [x] created_at, updated_at
 
-### TemplateItem - Элементы шаблона
+### TemplateItem (Элементы шаблона)
 - [x] id (UUID)
 - [x] template_id (FK)
 - [x] object_id (FK)
 - [x] position
 - [x] custom_text
 
-### TemplateResult - Результаты
+### TemplateResult (Результаты)
 - [x] id (UUID)
 - [x] template_id (FK)
 - [x] generated_prompt
@@ -98,7 +113,7 @@ prompt_manager/
 - [x] comfyui_workflow
 - [x] created_at
 
-### User - Пользователи
+### User (Пользователи)
 - [x] id (UUID)
 - [x] username
 - [x] email
@@ -108,6 +123,17 @@ prompt_manager/
 - [x] created_at, updated_at
 
 ## Сервисы
+
+### auth_service
+- [x] get_user_by_id()
+- [x] get_user_by_username()
+- [x] get_user_by_email()
+- [x] create_user()
+- [x] update_user()
+- [x] delete_user()
+- [x] authenticate()
+- [x] get_all_users()
+- [x] create_admin_user()
 
 ### category_service
 - [x] get_all_categories()
@@ -152,22 +178,14 @@ prompt_manager/
 - [x] get_comfyui_status()
 - [x] process_webhook()
 
-### auth_service
-- [x] get_user_by_id()
-- [x] get_user_by_username()
-- [x] get_user_by_email()
-- [x] create_user()
-- [x] update_user()
-- [x] delete_user()
-- [x] authenticate()
-- [x] get_all_users()
-- [x] create_admin_user()
-
 ## Веб-интерфейс
 
 ### Шаблоны (templates/)
 - [x] base.html - Базовый шаблон
 - [x] index.html - Главная страница
+- [x] login.html - Вход
+- [x] register.html - Регистрация
+- [x] profile.html - Профиль
 - [x] categories.html - Категории
 - [x] objects.html - Объекты
 - [x] templates.html - Шаблоны
@@ -180,17 +198,11 @@ prompt_manager/
 
 ### Роуты (routes/)
 - [x] web.py - Веб-интерфейс
-- [x] api.py - REST API
 - [x] auth.py - Авторизация
-
-### Шаблоны авторизации
-- [x] login.html - Вход
-- [x] register.html - Регистрация
-- [x] profile.html - Профиль
 
 ## Конфигурация
 
-### Параметры в config.py
+### Параметры в app/config.py
 - [x] SECRET_KEY
 - [x] DATABASE_URL
 - [x] SERVER_HOST, SERVER_PORT, SERVER_DEBUG
@@ -200,22 +212,20 @@ prompt_manager/
 - [x] DEFAULT_IMAGE_WIDTH, DEFAULT_IMAGE_HEIGHT
 - [x] DEFAULT_SEEDS, DEFAULT_STEPS, DEFAULT_CFG, DEFAULT_SAMPLER
 
-## Дополнительные компоненты
+## Развертывание
 
-- [x] CLI интерфейс (cli.py)
-- [x] Скрипт инициализации (init_data.py)
-- [x] Alembic миграции
-- [x] Тесты
+### deploy/
+- [x] prompt_manager.service - systemd сервис
+- [x] nginx.conf - конфигурация nginx
 
-## Развертывание (следующий этап)
+### install.sh
+- [x] Скрипт автоматической установки
 
-- [ ] Настройка PostgreSQL
-- [ ] Создание пользователя и БД
-- [ ] Настройка виртуального окружения
-- [ ] Systemd сервис
-- [ ] Gunicorn
+## Тесты
 
-## Будущий функционал
+- [x] tests/conftest.py
+- [x] tests/test_api.py ( УДАЛЕНО - API не используется)
 
-- [ ] Система дисковых квот для пользователей
-- [ ] Токены генерации с лимитами
+## Готово к развертыванию
+
+Проект полностью завершен и готов к развертыванию на сервере.

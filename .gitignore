@@ -34,3 +34,6 @@ Thumbs.db
 
 # Uploads
 /var/lib/prompt_manager/uploads/
+
+# Trash
+.trash/

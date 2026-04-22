@@ -32,9 +32,8 @@ prompt_manager/
 │   ├── config.py             # Конфигурация
 │   ├── models/               # SQLAlchemy модели
 │   │   └── __init__.py
-│   ├── routes/               # Маршруты (web, api, auth)
+│   ├── routes/               # Маршруты (web, auth)
 │   │   ├── web.py
-│   │   ├── api.py
 │   │   └── auth.py
 │   ├── services/             # Бизнес-логика
 │   │   ├── category_service.py
@@ -55,7 +54,6 @@ prompt_manager/
 ├── requirements.txt
 ├── run.py                    # Точка входа
 ├── install.sh                # Скрипт установки
-├── cli.py                    # CLI-команды
 └── .env.example              # Пример конфигурации
 ```
 
@@ -155,13 +153,9 @@ BACKUP_RETENTION_DAYS=30
 
 ### 5. Инициализация базы данных
 
+База данных создается автоматически при первом запуске приложения.
+
 ```bash
-# Применение миграций
-flask db upgrade
-
-# Или через CLI
-python cli.py db upgrade
-
 # Загрузка начальных данных (опционально)
 python init_data.py
 ```
@@ -256,21 +250,6 @@ sudo bash install.sh
 - `/profile` — профиль пользователя
 - `/admin` — администрирование (для админов)
 
-### API
-
-REST API доступен по адресу `/api/`:
-
-| Метод | Endpoint | Описание |
-|-------|----------|----------|
-| GET | `/api/categories` | Список категорий |
-| POST | `/api/categories` | Создание категории |
-| GET | `/api/objects` | Список объектов |
-| POST | `/api/objects` | Создание объекта |
-| GET | `/api/templates` | Список шаблонов |
-| POST | `/api/templates` | Создание шаблона |
-| POST | `/api/generate` | Генерация промта |
-| POST | `/api/comfyui/send` | Отправка в ComfyUI |
-
 ### Программный доступ
 
 ```python
@@ -308,21 +287,6 @@ with app.app_context():
     # Генерация промта
     result = generator_service.generate_prompt(tmpl.id)
     print(result['generated_prompt'])
-```
-
-## CLI-команды
-
-```bash
-# Миграции
-python cli.py db init          # Инициализация миграций
-python cli.py db migrate       # Создание миграции
-python cli.py db upgrade       # Применение миграций
-python cli.py db downgrade     # Откат миграции
-
-# Управление
-python cli.py admin stats      # Статистика системы
-python cli.py admin backup     # Создание бэкапа
-python cli.py admin cleanup    # Очистка изображений
 ```
 
 ## Конфигурация

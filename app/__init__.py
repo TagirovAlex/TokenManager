@@ -1,17 +1,21 @@
 import os
 from flask import Flask
 from flask_sqlalchemy import SQLAlchemy
+from flask_wtf.csrf import CSRFProtect
 from dotenv import load_dotenv
 
 load_dotenv()
 
 db = SQLAlchemy()
+csrf = CSRFProtect()
 
 
 def create_app():
     app = Flask(__name__)
     
     app.config['SECRET_KEY'] = os.getenv('SECRET_KEY', 'dev-secret-key-change-in-production')
+    app.config['WTF_CSRF_ENABLED'] = True
+    app.config['WTF_CSRF_TIME_LIMIT'] = None
     app.config['SQLALCHEMY_DATABASE_URI'] = os.getenv('DATABASE_URL', 
         'postgresql://prompt_user:password@localhost:5432/prompt_manager')
     app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
@@ -42,10 +46,10 @@ def create_app():
     app.config['PERMANENT_SESSION_LIFETIME'] = 86400
     
     db.init_app(app)
+    csrf.init_app(app)
     
-    from app.routes import web, api, auth
+    from app.routes import web, auth
     app.register_blueprint(web)
-    app.register_blueprint(api)
     app.register_blueprint(auth)
     
     with app.app_context():
