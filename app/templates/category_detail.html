@@ -5,12 +5,19 @@
 {% block content %}
 <div class="page-header">
     <h1 class="page-title">{{ category.display_name }}</h1>
-    <button class="btn btn-primary" data-modal="create-object">Добавить объект</button>
+    <div class="page-actions">
+        <button class="btn btn-secondary" data-modal="add-attribute">Реквизиты</button>
+        <button class="btn btn-primary" data-modal="create-object">Добавить объект</button>
+    </div>
 </div>
 
 {% if category.description %}
 <p class="text-muted">{{ category.description }}</p>
 {% endif %}
+
+<div class="tabs">
+    <a href="#" class="tab active">Объекты</a>
+</div>
 
 <div id="objects-list">
     {% for obj in objects %}
@@ -23,6 +30,13 @@
             <div class="object-card-prompt">{{ obj.prompt }}</div>
             {% if obj.description %}
             <small>{{ obj.description }}</small>
+            {% endif %}
+            {% if obj.attr_values.all() %}
+            <div class="object-attributes">
+                {% for av in obj.attr_values %}
+                <span class="attr-badge">{{ av.attribute_def.display_name }}: {{ av.value }}</span>
+                {% endfor %}
+            </div>
             {% endif %}
         </div>
         <div class="actions">
@@ -47,6 +61,7 @@
             <button class="modal-close">&times;</button>
         </div>
         <form method="POST" action="{{ url_for('web.object_create') }}" enctype="multipart/form-data">
+            <input type="hidden" name="category_id" value="{{ category.id }}">
             <div class="form-group">
                 <label class="form-label">Имя</label>
                 <input type="text" name="name" class="form-input" required placeholder="Воин">
@@ -59,6 +74,38 @@
                 <label class="form-label">Описание</label>
                 <textarea name="description" class="form-textarea" placeholder="Описание объекта"></textarea>
             </div>
+            
+            {% if attributes %}
+            <h4 style="margin: 1rem 0;">Реквизиты</h4>
+            {% for attr in attributes %}
+            <div class="form-group">
+                <label class="form-label">{{ attr.display_name }}</label>
+                {% if attr.field_type == 'bool' %}
+                <select name="attr_{{ attr.id }}" class="form-select">
+                    <option value="">-- Не указано --</option>
+                    <option value="true">Да</option>
+                    <option value="false">Нет</option>
+                </select>
+                {% elif attr.field_type == 'int' %}
+                <input type="number" name="attr_{{ attr.id }}" class="form-input" 
+                       min="{{ attr.min_value }}" max="{{ attr.max_value }}">
+                {% elif attr.field_type == 'int_list' %}
+                <input type="number" name="attr_{{ attr.id }}" class="form-input" 
+                       min="{{ attr.min_value }}" max="{{ attr.max_value }}" step="{{ attr.step or 1 }}">
+                {% elif attr.field_type == 'str' %}
+                <input type="text" name="attr_{{ attr.id }}" class="form-input">
+                {% elif attr.field_type == 'str_list' %}
+                <select name="attr_{{ attr.id }}" class="form-select">
+                    <option value="">-- Не указано --</option>
+                    {% for opt in attr.options or [] %}
+                    <option value="{{ opt }}">{{ opt }}</option>
+                    {% endfor %}
+                </select>
+                {% endif %}
+            </div>
+            {% endfor %}
+            {% endif %}
+            
             <div class="form-group">
                 <label class="form-label">Изображение</label>
                 <input type="file" name="image" class="form-input" accept="image/*" onchange="previewImage(this)">
@@ -66,8 +113,76 @@
                     <img id="preview-img" style="max-width: 200px; max-height: 200px; border-radius: 8px;">
                 </div>
             </div>
-            <input type="hidden" name="category_id" value="{{ category.id }}">
             <button type="submit" class="btn btn-primary">Создать</button>
+        </form>
+    </div>
+</div>
+
+<div class="modal" id="add-attribute">
+    <div class="modal-content">
+        <div class="modal-header">
+            <h2>Управление реквизитами</h2>
+            <button class="modal-close">&times;</button>
+        </div>
+        
+        <h4>Существующие реквизиты:</h4>
+        {% if attributes %}
+        <ul class="attributes-list">
+            {% for attr in attributes %}
+            <li class="attribute-item">
+                <span><strong>{{ attr.display_name }}</strong> ({{ attr.name }}) - {{ attr.field_type }}</span>
+                <a href="{{ url_for('web.attribute_delete', attribute_id=attr.id) }}" class="btn btn-sm btn-danger" data-confirm="Удалить реквизит?">Удал.</a>
+            </li>
+            {% endfor %}
+        </ul>
+        {% else %}
+        <p class="text-muted">Реквизитов пока нет</p>
+        {% endif %}
+        
+        <hr style="margin: 1.5rem 0;">
+        
+        <h4>Создать новый реквизит:</h4>
+        <form method="POST" action="{{ url_for('web.attribute_create', category_id=category.id) }}">
+            <div class="form-group">
+                <label class="form-label">Техническое имя</label>
+                <input type="text" name="name" class="form-input" required placeholder="gender">
+            </div>
+            <div class="form-group">
+                <label class="form-label">Отображаемое имя</label>
+                <input type="text" name="display_name" class="form-input" required placeholder="Пол">
+            </div>
+            <div class="form-group">
+                <label class="form-label">Тип поля</label>
+                <select name="field_type" class="form-select" required>
+                    <option value="bool">Да/Нет</option>
+                    <option value="int">Число</option>
+                    <option value="int_list">Число из списка</option>
+                    <option value="str">Текст</option>
+                    <option value="str_list">Выбор из списка</option>
+                </select>
+            </div>
+            <div class="form-group int-list-params" style="display: none;">
+                <label class="form-label">Минимум</label>
+                <input type="number" name="min_value" class="form-input" value="0">
+            </div>
+            <div class="form-group int-list-params" style="display: none;">
+                <label class="form-label">Максимум</label>
+                <input type="number" name="max_value" class="form-input" value="100">
+            </div>
+            <div class="form-group int-list-params" style="display: none;">
+                <label class="form-label">Шаг</label>
+                <input type="number" name="step" class="form-input" value="1">
+            </div>
+            <div class="form-group str-list-params" style="display: none;">
+                <label class="form-label">Варианты (через запятую)</label>
+                <input type="text" name="options" class="form-input" placeholder="мужской, женский">
+            </div>
+            <div class="form-group">
+                <label class="form-label">
+                    <input type="checkbox" name="is_required"> Обязательное поле
+                </label>
+            </div>
+            <button type="submit" class="btn btn-primary">Создать реквизит</button>
         </form>
     </div>
 </div>
@@ -86,5 +201,47 @@ function previewImage(input) {
         reader.readAsDataURL(input.files[0]);
     }
 }
+
+document.querySelector('[name="field_type"]').addEventListener('change', function() {
+    const showIntList = this.value === 'int_list';
+    const showStrList = this.value === 'str_list';
+    document.querySelectorAll('.int-list-params').forEach(el => el.style.display = showIntList ? 'block' : 'none');
+    document.querySelectorAll('.str-list-params').forEach(el => el.style.display = showStrList ? 'block' : 'none');
+});
 </script>
+
+<style>
+.object-attributes {
+    margin-top: 0.5rem;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.25rem;
+}
+
+.attr-badge {
+    background-color: #e0f2fe;
+    color: #0369a1;
+    padding: 0.125rem 0.5rem;
+    border-radius: 9999px;
+    font-size: 0.75rem;
+}
+
+.attributes-list {
+    list-style: none;
+    padding: 0;
+}
+
+.attribute-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 0.5rem;
+    border-bottom: 1px solid var(--border-color);
+}
+
+.page-actions {
+    display: flex;
+    gap: 0.5rem;
+}
+</style>
 {% endblock %}

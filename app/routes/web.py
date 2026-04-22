@@ -113,6 +113,64 @@ def category_delete(category_id):
     return redirect(url_for('web.categories'))
 
 
+@web.route('/categories/<category_id>/attributes/create', methods=['POST'])
+def attribute_create(category_id):
+    try:
+        field_type = request.form.get('field_type')
+        
+        min_value = None
+        max_value = None
+        step = None
+        options = None
+        
+        if field_type == 'int_list':
+            min_value = request.form.get('min_value', type=int)
+            max_value = request.form.get('max_value', type=int)
+            step = request.form.get('step', type=int)
+        
+        if field_type == 'str_list':
+            options_str = request.form.get('options', '')
+            options = [o.strip() for o in options_str.split(',') if o.strip()]
+        
+        category_service.create_category_attribute(
+            category_id=category_id,
+            name=request.form['name'],
+            display_name=request.form['display_name'],
+            field_type=field_type,
+            min_value=min_value,
+            max_value=max_value,
+            step=step,
+            options=options,
+            is_required=request.form.get('is_required') == 'on'
+        )
+        flash('Реквизит создан', 'success')
+    except ValueError as e:
+        flash(str(e), 'error')
+    
+    return redirect(url_for('web.category_detail', category_id=category_id))
+
+
+@web.route('/attributes/<attribute_id>/delete')
+def attribute_delete(attribute_id):
+    from app.services import category_service
+    attr = category_service.get_category_attributes(None)
+    try:
+        from app.models import AttributeDef
+        attribute_def = db.session.get(AttributeDef, attribute_id)
+        if not attribute_def:
+            flash('Реквизит не найден', 'error')
+            return redirect(url_for('web.categories'))
+        
+        category_id = attribute_def.category_id
+        db.session.delete(attribute_def)
+        db.session.commit()
+        flash('Реквизит удален', 'success')
+    except Exception as e:
+        flash(f'Ошибка: {str(e)}', 'error')
+    
+    return redirect(url_for('web.category_detail', category_id=category_id))
+
+
 @web.route('/objects')
 def objects():
     category_id = request.args.get('category_id')
@@ -140,12 +198,30 @@ def object_create():
                 upload_dir = current_app.config.get('UPLOAD_DIR', '/var/lib/prompt_manager/uploads')
                 image_path = process_and_save_image(file, upload_dir, filename)
         
-        object_service.create_object(
+        attributes = []
+        for key, value in request.form.items():
+            if key.startswith('attr_') and value:
+                attr_id = key.replace('attr_', '')
+                attr_data = {
+                    'attribute_def_id': attr_id
+                }
+                if value == 'true':
+                    attr_data['bool_value'] = True
+                elif value == 'false':
+                    attr_data['bool_value'] = False
+                elif value.isdigit():
+                    attr_data['int_value'] = int(value)
+                else:
+                    attr_data['str_value'] = value
+                attributes.append(attr_data)
+        
+        obj = object_service.create_object(
             category_id=request.form['category_id'],
             name=request.form['name'],
             prompt=request.form['prompt'],
             description=request.form.get('description'),
-            image_path=image_path
+            image_path=image_path,
+            attributes=attributes if attributes else None
         )
         flash('Объект создан', 'success')
     except ValueError as e:
