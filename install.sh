@@ -10,7 +10,7 @@ GROUP="prompt"
 DB_NAME="prompt_manager"
 DB_USER="prompt_user"
 
-# Читаем настройки БД из .env ТЕКУЩЕЙ директории (где запускается скрипт)
+# Читаем настройки БД из .env ТЕКУЩЕЙ дире��тории (где запускается скрипт)
 CURRENT_DIR=$(pwd)
 if [ -f "$CURRENT_DIR/.env" ]; then
     source "$CURRENT_DIR/.env"
@@ -37,31 +37,41 @@ echo "[3/8] Настройка PostgreSQL..."
 systemctl enable postgresql
 systemctl start postgresql
 
-# Экранируем пароль для SQL - заменяем ' на '' 
+# Находим pg_hba.conf - может быть в разных версиях
+PG_VERSION=$(ls -1 /etc/postgresql/ | sort -V | tail -1)
+PG_HBA="/etc/postgresql/$PG_VERSION/main/pg_hba.conf"
+echo "Используем pg_hba.conf: $PG_HBA"
+
+# Экранируем пароль для SQL
 DB_PASS_SQL=$(echo "$DB_PASS" | sed "s/'/''/g")
 
-# Удаляем старого пользователя и создаём заново с правильным паролем
+# Удаляем старого пользователя и создаём заново
 su - postgres -c "psql -c \"DROP USER IF EXISTS $DB_USER;\"" 2>/dev/null || true
 su - postgres -c "psql -c \"DROP DATABASE IF EXISTS $DB_NAME;\"" 2>/dev/null || true
 su - postgres -c "psql -c \"CREATE USER $DB_USER WITH PASSWORD '$DB_PASS_SQL';\"" 2>/dev/null || true
 su - postgres -c "psql -c \"CREATE DATABASE $DB_NAME OWNER $DB_USER;\"" 2>/dev/null || true
 su - postgres -c "psql -c \"GRANT ALL PRIVILEGES ON DATABASE $DB_NAME TO $DB_USER;\"" 2>/dev/null || true
 
-# Настройка pg_hba.conf для md5 аутентификации - используем trust для локальных подключений
-PG_HBA="/etc/postgresql/15/main/pg_hba.conf"
+# Полностью перезаписываем pg_hba.conf - ВЕСЬ ФАЙЛ
 if [ -f "$PG_HBA" ]; then
-    # Удаляем старые строки для prompt_user
-    sed -i "/$DB_USER/d" "$PG_HBA"
-    # Добавляем новые - trust для локального unix сокета, md5 для TCP
-    echo "local   all             $DB_USER                        trust" >> "$PG_HBA"
-    echo "host    all             $DB_USER        127.0.0.1/32            trust" >> "$PG_HBA"
-    echo "host    all             $DB_USER        ::1/32                 trust" >> "$PG_HBA"
+    cat > "$PG_HBA" << 'PGHBA'
+# PostgreSQL Client Authentication Configuration File
+# Local connections - trust (no password)
+local   all             all                                         trust
+# IPv4 local connections
+host    all             all             127.0.0.1/32              trust
+# IPv6 local connections
+host    all             all             ::1/128                       trust
+PGHBA
+    # Меняем права и перезапускаем
+    chmod 640 "$PG_HBA"
+    chown postgres:postgres "$PG_HBA"
     systemctl reload postgresql
 fi
 
+# Тестируем подключение через unix socket
 echo "Проверка подключения к БД..."
-PGPASSWORD="$DB_PASS" psql -h localhost -U "$DB_USER" -d "$DB_NAME" -c "SELECT 1;" > /dev/null 2>&1 && echo "Подключение успешно!" || echo "Подключение не удалось, пробуем через unix-сокет..."
-su - postgres -c "psql -d $DB_NAME -c 'SELECT 1;'" > /dev/null 2>&1 && echo "Подключение через unix-сокет успешно!" || echo "ОШИБКА подключения!"
+su - postgres -c "psql -d $DB_NAME -c 'SELECT 1;'" && echo "Подключение успешно!" || echo "ОШИБКА подключения!"
 
 echo "[4/8] Создание пользователя приложения..."
 useradd -r -s /bin/bash $USER 2>/dev/null || true
