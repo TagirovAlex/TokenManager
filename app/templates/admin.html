@@ -1,0 +1,77 @@
+{% extends "base.html" %}
+
+{% block title %}Администрирование - Prompt Manager{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <h1 class="page-title">Администрирование</h1>
+</div>
+
+<div class="stats-grid">
+    <div class="stat-card">
+        <div class="stat-value">{{ stats.categories }}</div>
+        <div class="stat-label">Категорий</div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-value">{{ stats.objects }}</div>
+        <div class="stat-label">Объектов</div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-value">{{ stats.templates }}</div>
+        <div class="stat-label">Шаблонов</div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-value">{{ stats.results }}</div>
+        <div class="stat-label">Результатов</div>
+    </div>
+</div>
+
+<div class="grid grid-2">
+    <div class="card">
+        <h3 class="card-title">Бэкап</h3>
+        <p>Создать резервную копию базы данных и загруженных файлов.</p>
+        <form method="POST" action="{{ url_for('web.backup_create') }}">
+            <button type="submit" class="btn btn-primary">Создать бэкап</button>
+        </form>
+        
+        {% if backups %}
+        <h4 style="margin-top: 1rem;">Существующие бэкапы:</h4>
+        <ul>
+            {% for backup in backups %}
+            <li>{{ backup.name }} ({{ backup.size }} байт)</li>
+            {% endfor %}
+        </ul>
+        {% endif %}
+    </div>
+    
+    <div class="card">
+        <h3 class="card-title">Очистка</h3>
+        <p>Удалить неиспользуемые изображения с сервера.</p>
+        <form method="POST" action="{{ url_for('web.cleanup_images') }}">
+            <button type="submit" class="btn btn-warning">Очистить изображения</button>
+        </form>
+    </div>
+</div>
+
+<div class="card" style="margin-top: 1rem;">
+    <h3 class="card-title">Настройки</h3>
+    <table class="table">
+        <tr>
+            <td>Директория загрузок</td>
+            <td><code>{{ config.UPLOAD_DIR }}</code></td>
+        </tr>
+        <tr>
+            <td>Директория бэкапов</td>
+            <td><code>{{ config.BACKUP_DIR }}</code></td>
+        </tr>
+        <tr>
+            <td>ComfyUI хост</td>
+            <td><code>{{ config.COMFYUI_HOST }}</code></td>
+        </tr>
+        <tr>
+            <td>Размер изображения (макс)</td>
+            <td>{{ config.MAX_IMAGE_SIZE }} байт</td>
+        </tr>
+    </table>
+</div>
+{% endblock %}

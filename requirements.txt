@@ -1,0 +1,13 @@
+# Prompt Manager
+# System for storing and generating prompts for local image/video generation
+
+flask
+flask-sqlalchemy
+sqlalchemy
+psycopg2-binary
+alembic
+python-dotenv
+gunicorn
+requests
+click
+werkzeug

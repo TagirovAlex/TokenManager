@@ -1,0 +1,131 @@
+{% extends "base.html" %}
+
+{% block title %}Генератор промтов - Prompt Manager{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <h1 class="page-title">Генератор промтов</h1>
+</div>
+
+<div class="grid grid-2">
+    <div class="card">
+        <h3 class="card-title">1. Выберите шаблон</h3>
+        <select id="template-select" class="form-select" onchange="loadTemplateItems()">
+            <option value="">-- Выберите шаблон --</option>
+            {% for template in templates %}
+            <option value="{{ template.id }}" data-text="{{ template.template_text }}">{{ template.name }}</option>
+            {% endfor %}
+        </select>
+        
+        <div id="template-preview" style="margin-top: 1rem;">
+            <div class="prompt-display">{{ template.template_text if template else 'Выберите шаблон для просмотра' }}</div>
+        </div>
+    </div>
+    
+    <div class="card">
+        <h3 class="card-title">2. Выберите объекты</h3>
+        <div id="objects-selection">
+            {% for category in categories %}
+            <div class="form-group">
+                <h4>{{ category.display_name }}</h4>
+                <div class="grid grid-2">
+                    {% for obj in objects if obj.category_id == category.id %}
+                    <div class="object-select-card" onclick="selectObject('{{ obj.id }}', this)">
+                        <input type="checkbox" name="objects" value="{{ obj.id }}" hidden>
+                        <strong>{{ obj.name }}</strong>
+                        <small>{{ obj.prompt }}</small>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+            {% else %}
+            <p class="text-muted">Сначала создайте объекты</p>
+            {% endfor %}
+        </div>
+    </div>
+</div>
+
+<div class="card" style="margin-top: 1rem;">
+    <h3 class="card-title">3. Генерировать</h3>
+    <form method="POST" action="{{ url_for('web.generate') }}">
+        <input type="hidden" name="template_id" id="template-id" value="">
+        <div id="selected-items"></div>
+        <button type="submit" class="btn btn-primary btn-lg">Сгенерировать промт</button>
+    </form>
+</div>
+
+{% if generated_prompt %}
+<div class="card" style="margin-top: 1rem;">
+    <h3 class="card-title">Результат</h3>
+    <div class="prompt-display" id="generated-prompt">{{ generated_prompt }}</div>
+    <div class="actions" style="margin-top: 1rem;">
+        <button class="btn btn-secondary" onclick="copyToClipboard('{{ generated_prompt }}')">Копировать</button>
+        <a href="{{ url_for('web.comfyui_send', prompt=generated_prompt|url_encode) }}" class="btn btn-primary">Отправить в ComfyUI</a>
+    </div>
+</div>
+{% endif %}
+
+<script>
+function loadTemplateItems() {
+    const select = document.getElementById('template-select');
+    const templateId = select.value;
+    document.getElementById('template-id').value = templateId;
+    
+    const option = select.options[select.selectedIndex];
+    const templateText = option.dataset.text;
+    
+    const preview = document.getElementById('template-preview');
+    preview.innerHTML = '<div class="prompt-display">' + (templateText || 'Выберите шаблон') + '</div>';
+}
+
+function selectObject(objectId, card) {
+    const checkbox = card.querySelector('input[type="checkbox"]');
+    checkbox.checked = !checkbox.checked;
+    card.classList.toggle('selected', checkbox.checked);
+    updateSelectedItems();
+}
+
+function updateSelectedItems() {
+    const container = document.getElementById('selected-items');
+    const checkboxes = document.querySelectorAll('#objects-selection input:checked');
+    
+    container.innerHTML = checkboxes.length > 0 
+        ? '<p>Выбрано объектов: ' + checkboxes.length + '</p>'
+        : '<p class="text-muted">Выберите объекты слева</p>';
+}
+</script>
+
+<style>
+.object-select-card {
+    padding: 0.5rem;
+    border: 1px solid var(--border-color);
+    border-radius: 0.25rem;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.object-select-card:hover {
+    background-color: var(--bg-color);
+}
+
+.object-select-card.selected {
+    border-color: var(--primary-color);
+    background-color: #dbeafe;
+}
+
+.object-select-card strong {
+    display: block;
+}
+
+.object-select-card small {
+    display: block;
+    font-size: 0.75rem;
+    color: var(--text-muted);
+}
+
+.btn-lg {
+    padding: 0.75rem 2rem;
+    font-size: 1rem;
+}
+</style>
+{% endblock %}

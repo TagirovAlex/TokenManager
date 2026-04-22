@@ -1,0 +1,54 @@
+{% extends "base.html" %}
+
+{% block title %}Категории - Prompt Manager{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <h1 class="page-title">Категории</h1>
+    <button class="btn btn-primary" data-modal="create-category">Добавить категорию</button>
+</div>
+
+<div class="category-grid">
+    {% for category in categories %}
+    <a href="{{ url_for('web.category_detail', category_id=category.id) }}" class="category-card">
+        <div class="category-card-icon">{{ category.icon or '📁' }}</div>
+        <div class="category-card-name">{{ category.display_name }}</div>
+        <div class="category-card-count">{{ category.objects_count }} объектов</div>
+    </a>
+    {% else %}
+    <div class="empty-state">
+        <div class="empty-state-icon">📂</div>
+        <p>Категорий пока нет</p>
+        <button class="btn btn-primary" data-modal="create-category">Создать первую категорию</button>
+    </div>
+    {% endfor %}
+</div>
+
+<div class="modal" id="create-category">
+    <div class="modal-content">
+        <div class="modal-header">
+            <h2>Создать категорию</h2>
+            <button class="modal-close">&times;</button>
+        </div>
+        <form method="POST" action="{{ url_for('web.category_create') }}">
+            <div class="form-group">
+                <label class="form-label">Имя (techname)</label>
+                <input type="text" name="name" class="form-input" required placeholder="character">
+            </div>
+            <div class="form-group">
+                <label class="form-label">Отображаемое имя</label>
+                <input type="text" name="display_name" class="form-input" required placeholder="Персонаж">
+            </div>
+            <div class="form-group">
+                <label class="form-label">Описание</label>
+                <textarea name="description" class="form-textarea" placeholder="Описание категории"></textarea>
+            </div>
+            <div class="form-group">
+                <label class="form-label">Иконка (emoji)</label>
+                <input type="text" name="icon" class="form-input" placeholder="👤">
+            </div>
+            <button type="submit" class="btn btn-primary">Создать</button>
+        </form>
+    </div>
+</div>
+{% endblock %}

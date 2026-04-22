@@ -1,0 +1,17 @@
+[Unit]
+Description=Prompt Manager System
+After=network.target postgresql.service
+
+[Service]
+Type=notify
+User=prompt
+Group=prompt
+WorkingDirectory=/opt/prompt_manager
+Environment="PATH=/opt/prompt_manager/venv/bin"
+Environment="PYTHONUNBUFFERED=1"
+ExecStart=/opt/prompt_manager/venv/bin/gunicorn --workers 4 --bind 127.0.0.1:5000 --timeout 120 run:app
+Restart=always
+RestartSec=10
+
+[Install]
+WantedBy=multi-user.target

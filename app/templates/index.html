@@ -1,0 +1,48 @@
+{% extends "base.html" %}
+
+{% block title %}Главная - Prompt Manager{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <h1 class="page-title">Prompt Manager</h1>
+    <p>Система хранения и генерации промтов</p>
+</div>
+
+<div class="stats-grid">
+    <div class="stat-card">
+        <div class="stat-value">{{ stats.categories }}</div>
+        <div class="stat-label">Категорий</div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-value">{{ stats.objects }}</div>
+        <div class="stat-label">Объектов</div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-value">{{ stats.templates }}</div>
+        <div class="stat-label">Шаблонов</div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-value">{{ stats.results }}</div>
+        <div class="stat-label">Результатов</div>
+    </div>
+</div>
+
+<div class="grid grid-2">
+    <a href="{{ url_for('web.categories') }}" class="card" style="text-decoration: none;">
+        <h3>📁 Категории</h3>
+        <p>Управление категориями объектов</p>
+    </a>
+    <a href="{{ url_for('web.objects') }}" class="card" style="text-decoration: none;">
+        <h3>📦 Объекты</h3>
+        <p>Промты и описания</p>
+    </a>
+    <a href="{{ url_for('web.templates') }}" class="card" style="text-decoration: none;">
+        <h3>📝 Шаблоны</h3>
+        <p>Шаблоны для генерации</p>
+    </a>
+    <a href="{{ url_for('web.generator') }}" class="card" style="text-decoration: none;">
+        <h3>⚡ Генератор</h3>
+        <p>Создание промтов</p>
+    </a>
+</div>
+{% endblock %}
