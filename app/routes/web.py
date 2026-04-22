@@ -662,7 +662,7 @@ def prompts_edit(result_id):
 def prompts_upload_image(result_id):
     from app.services import generator_service
     from flask import current_app
-    from app.utils import allowed_file, process_and_save_image
+    from app.utils.image_utils import allowed_file, process_and_save_image
     
     result = generator_service.get_result_by_id(result_id)
     if not result:
