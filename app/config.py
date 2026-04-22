@@ -26,12 +26,14 @@ class Config:
     BACKUP_DIR = os.getenv('BACKUP_DIR', '/var/backups/prompt_manager')
     BACKUP_RETENTION_DAYS = int(os.getenv('BACKUP_RETENTION_DAYS', 30))
     
-    DEFAULT_IMAGE_WIDTH = 512
-    DEFAULT_IMAGE_HEIGHT = 512
-    DEFAULT_SEEDS = 1
-    DEFAULT_STEPS = 20
-    DEFAULT_CFG = 8
-    DEFAULT_SAMPLER = 'euler'
+    DEFAULT_IMAGE_WIDTH = int(os.getenv('DEFAULT_IMAGE_WIDTH', 512))
+    DEFAULT_IMAGE_HEIGHT = int(os.getenv('DEFAULT_IMAGE_HEIGHT', 512))
+    DEFAULT_SEEDS = int(os.getenv('DEFAULT_SEEDS', 1))
+    DEFAULT_STEPS = int(os.getenv('DEFAULT_STEPS', 20))
+    DEFAULT_CFG = int(os.getenv('DEFAULT_CFG', 8))
+    DEFAULT_SAMPLER = os.getenv('DEFAULT_SAMPLER', 'euler')
+    
+    NGINX_PORT = int(os.getenv('NGINX_PORT', 8080))
 
 
 class DevelopmentConfig(Config):
