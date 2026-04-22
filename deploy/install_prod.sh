@@ -28,6 +28,21 @@ chown -R "$APP_USER":"$APP_USER" "$APP_HOME"
 chown -R "$APP_USER":"$APP_USER" "$UPLOAD_DIR"
 chown -R "$APP_USER":"$APP_USER" "$BACKUP_DIR"
 
+# Read SERVER_PORT from .env
+SERVER_PORT=5000
+if [ -f "$APP_HOME/.env" ]; then
+    SERVER_PORT=$(grep -E "^SERVER_PORT=" "$APP_HOME/.env" | cut -d'=' -f2 | tr -d '"\047')
+fi
+
+# Read NGINX_PORT from .env
+NGINX_PORT=8080
+if [ -f "$APP_HOME/.env" ]; then
+    NGINX_PORT=$(grep -E "^NGINX_PORT=" "$APP_HOME/.env" | cut -d'=' -f2 | tr -d '"\047')
+fi
+
+echo "Server port: $SERVER_PORT"
+echo "Nginx port: $NGINX_PORT"
+
 # Create systemd service
 echo "Setting up systemd service..."
 cat > /etc/systemd/system/prompt_manager.service << EOF
@@ -42,21 +57,14 @@ Group=$APP_USER
 WorkingDirectory=$APP_HOME
 Environment="PATH=$APP_HOME/venv/bin"
 Environment="PYTHONUNBUFFERED=1"
-ExecStart=$APP_HOME/venv/bin/gunicorn --workers 4 --bind 127.0.0.1:5000 --timeout 120 run:app
+Environment="SERVER_PORT=$SERVER_PORT"
+ExecStart=$APP_HOME/venv/bin/gunicorn --workers 4 --bind 127.0.0.1:$SERVER_PORT --timeout 120 run:app
 Restart=always
 RestartSec=10
 
 [Install]
 WantedBy=multi-user.target
 EOF
-
-# Configure nginx - read port from .env if exists
-NGINX_PORT=8080
-if [ -f "$APP_HOME/.env" ]; then
-    NGINX_PORT=$(grep -E "^NGINX_PORT=" "$APP_HOME/.env" | cut -d'=' -f2 | tr -d '"\047')
-fi
-
-echo "Nginx port: $NGINX_PORT"
 
 cat > /etc/nginx/sites-available/prompt_manager << EOF
 server {
@@ -66,7 +74,7 @@ server {
     client_max_body_size 10M;
 
     location / {
-        proxy_pass http://127.0.0.1:5000;
+        proxy_pass http://127.0.0.1:$SERVER_PORT;
         proxy_set_header Host \$host;
         proxy_set_header X-Real-IP \$remote_addr;
         proxy_set_header X-Forwarded-For \$proxy_add_x_forwarded_for;
@@ -105,6 +113,7 @@ echo "Reloading systemd..."
 systemctl daemon-reload
 
 echo "=== Installation complete ==="
+echo "Server port: $SERVER_PORT"
 echo "Nginx port: $NGINX_PORT"
 echo "To start the service: systemctl start prompt_manager"
 echo "To enable on boot: systemctl enable prompt_manager"
