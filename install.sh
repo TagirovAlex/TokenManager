@@ -30,6 +30,19 @@ su - postgres -c "psql -c \"CREATE USER $DB_USER WITH PASSWORD '$DB_PASS';\"" 2>
 su - postgres -c "psql -c \"CREATE DATABASE $DB_NAME OWNER $DB_USER;\"" 2>/dev/null || true
 su - postgres -c "psql -c \"GRANT ALL PRIVILEGES ON DATABASE $DB_NAME TO $DB_USER;\"" 2>/dev/null || true
 
+# Настройка аутентификации
+su - postgres -c "psql -c \"ALTER USER $DB_USER WITH PASSWORD '$DB_PASS';\"" 2>/dev/null || true
+
+# Настройка pg_hba.conf для md5 аутентификации
+PG_HBA="/etc/postgresql/15/main/pg_hba.conf"
+if [ -f "$PG_HBA" ]; then
+    if ! grep -q "prompt_manager" "$PG_HBA"; then
+        echo "host    all             $DB_USER        127.0.0.1/32            md5" >> "$PG_HBA"
+        echo "host    all             $DB_USER        ::1/32                 md5" >> "$PG_HBA"
+    fi
+    systemctl reload postgresql
+fi
+
 echo "[4/8] Создание пользователя приложения..."
 useradd -r -s /bin/bash $USER 2>/dev/null || true
 
