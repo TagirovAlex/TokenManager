@@ -11,20 +11,25 @@
 
 {{ search('web.categories') }}
 
-<div class="category-grid">
+<div class="category-list">
     {% for category in categories %}
-    <div class="category-card">
-        <a href="{{ url_for('web.category_detail', category_id=category.id) }}" class="category-link">
+    <div class="category-item">
+        <a href="{{ url_for('web.category_detail', category_id=category.id) }}">
             {% if category.image_path %}
-            <img src="{{ category.image_path }}" alt="{{ category.display_name }}" class="category-image">
+            <img src="{{ category.image_path }}" alt="{{ category.display_name }}" class="category-thumb">
             {% else %}
             <div class="category-icon">{{ category.icon or '📁' }}</div>
             {% endif %}
-            <div class="category-name">{{ category.display_name }}</div>
         </a>
+        <div class="category-info">
+            <a href="{{ url_for('web.category_detail', category_id=category.id) }}" class="category-name">{{ category.display_name }}</a>
+            {% if category.description %}
+            <small>{{ category.description }}</small>
+            {% endif %}
+        </div>
         <div class="category-actions-mini">
-            <a href="{{ url_for('web.category_edit', category_id=category.id) }}" class="btn btn-xs">Ред</a>
-            <a href="{{ url_for('web.category_delete', category_id=category.id) }}" class="btn btn-xs btn-danger" data-confirm="Удалить?">×</a>
+            <a href="{{ url_for('web.category_edit', category_id=category.id) }}" class="btn btn-sm">Ред</a>
+            <a href="{{ url_for('web.category_delete', category_id=category.id) }}" class="btn btn-sm btn-danger" data-confirm="Удалить?">Удал</a>
         </div>
     </div>
     {% else %}
@@ -72,14 +77,13 @@
 </div>
 
 <style>
-.category-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(120px,1fr));gap:0.5rem}
-.category-card{padding:0.25rem;text-align:center}
-.category-link{display:block;text-decoration:none;color:inherit;padding:0.25rem;border-radius:0.25rem}
-.category-link:hover{background:var(--border-color)}
-.category-image{width:80px;height:80px;object-fit:cover;border-radius:0.25rem;margin:0 auto}
-.category-icon{width:80px;height:80px;display:flex;align-items:center;justify-content:center;font-size:2rem;margin:0 auto;background:var(--border-color);border-radius:0.25rem}
-.category-name{font-size:0.875rem;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.category-actions-mini{display:flex;justify-content:center;gap:0.25rem;margin-top:0.25rem}
-.btn-xs{padding:0.375rem 0.75rem;font-size:0.75rem}
+.category-list{display:flex;flex-direction:column;gap:0.5rem}
+.category-item{display:flex;align-items:center;gap:1rem;padding:0.75rem;border:1px solid var(--border-color);border-radius:0.25rem}
+.category-item:hover{background:var(--border-color)}
+.category-thumb{width:60px;height:60px;object-fit:cover;border-radius:0.25rem;flex-shrink:0}
+.category-icon{width:60px;height:60px;display:flex;align-items:center;justify-content:center;font-size:1.5rem;flex-shrink:0;background:var(--border-color);border-radius:0.25rem}
+.category-info{flex:1}
+.category-name{font-size:1rem;font-weight:500}
+.category-actions-mini{display:flex;gap:0.5rem}
 </style>
 {% endblock %}
