@@ -2,83 +2,356 @@
 
 Система хранения и генерации промтов для локальной генерации изображений и видео.
 
+## Возможности
+
+- **Управление категориями** — создавайте и редактируйте категории объектов (персонажи, локации, одежда, транспорт и др.)
+- **Объекты с атрибутами** — храните объекты с гибкой системой динамических атрибутов
+- **Шаблоны промтов** — создавайте шаблоны для автоматической генерации промтов
+- **Генератор** — объединяйте объекты в промты по шаблону
+- **Интеграция с ComfyUI** — отправляйте сгенерированные промты напрямую в ComfyUI
+- **Веб-интерфейс** — удобное управление через браузер
+- **Администрирование** — бэкапы, статистика, очистка изображений
+
 ## Технологический стек
 
-- Python 3.11+
-- Flask (только app factory)
-- SQLAlchemy ORM
-- PostgreSQL
-- Debian 12+ (без Docker)
+| Компонент | Версия |
+|-----------|--------|
+| Python | 3.11+ |
+| Flask | 2.x |
+| SQLAlchemy | ORM |
+| PostgreSQL | 15+ |
+| Gunicorn | WSGI-сервер |
+| Debian | 12+ (без Docker) |
 
-## Структура
+## Структура проекта
 
 ```
 prompt_manager/
 ├── app/
-│   ├── __init__.py      # Flask app factory
-│   ├── models/         # SQLAlchemy модели
-│   └── services/       # Бизнес-логика (внутренние вызовы)
-├── migrations/         # Alembic
-├── tests/             # Тесты
+│   ├── __init__.py           # Flask App Factory
+│   ├── config.py             # Конфигурация
+│   ├── models/               # SQLAlchemy модели
+│   │   └── __init__.py
+│   ├── routes/               # Маршруты (web, api, auth)
+│   │   ├── web.py
+│   │   ├── api.py
+│   │   └── auth.py
+│   ├── services/             # Бизнес-логика
+│   │   ├── category_service.py
+│   │   ├── object_service.py
+│   │   ├── template_service.py
+│   │   ├── generator_service.py
+│   │   ├── admin_service.py
+│   │   ├── auth_service.py
+│   │   └── comfyui_service.py
+│   ├── static/               # Статика (CSS, JS)
+│   ├── templates/            # HTML-шаблоны
+│   └── utils/                # Утилиты
+├── migrations/               # Alembic миграции
+├── tests/                    # Тесты
+├── deploy/                   # Файлы развертывания
+│   ├── prompt_manager.service
+│   └── nginx.conf
 ├── requirements.txt
-└── run.py            # Точка входа
+├── run.py                    # Точка входа
+├── install.sh                # Скрипт установки
+├── cli.py                    # CLI-команды
+└── .env.example              # Пример конфигурации
 ```
+
+## Модели данных
+
+### Category (Категории)
+
+Типы объектов: персонаж, локация, действие, одежда, транспорт, архитектура и др.
+
+- `id` — UUID (первичный ключ)
+- `name` — техническое имя (уникальное)
+- `display_name` — отображаемое имя
+- `description` — описание
+- `icon` — иконка
+
+### Object (Объекты)
+
+Конкретные сущности внутри категории.
+
+- `id` — UUID
+- `category_id` — связь с категорией
+- `name` — имя объекта
+- `prompt` — текстовая часть промта
+- `image_path` — путь к изображению
+- `is_active` — активен/неактивен
+
+### AttributeDef (Определения атрибутов)
+
+Дополнительные поля для объектов категории.
+
+Типы полей:
+- `bool` — да/нет
+- `int` — целое число
+- `int_list` — число из диапазона (min, max, step)
+- `str` — строка
+- `str_list` — строка из списка вариантов
+
+### Template (Шаблоны)
+
+Шаблоны для генерации промтов с поддержкой плейсхолдеров `{object_id}`.
+
+### TemplateResult (Результаты)
+
+Сохраненные результаты генерации промтов.
 
 ## Установка
 
+### 1. Клонирование репозитория
+
 ```bash
-# Создание виртуального окружения
+git clone https://github.com/TagirovAlex/TokenManager.git
+cd TokenManager
+```
+
+### 2. Создание виртуального окружения
+
+```bash
 python3.11 -m venv venv
-source venv/bin/activate
+source venv/bin/activate  # Linux/macOS
+# или
+venv\Scripts\activate     # Windows
+```
 
-# Установка зависимостей
+### 3. Установка зависимостей
+
+```bash
 pip install -r requirements.txt
+```
 
-# Настройка .env
+### 4. Настройка переменных окружения
+
+```bash
 cp .env.example .env
 # Отредактируйте .env с настройками БД
 ```
 
-## Запуск
+Параметры в `.env`:
+```env
+SECRET_KEY=your-secret-key
+DATABASE_URL=postgresql://user:password@localhost:5432/dbname
+SERVER_HOST=0.0.0.0
+SERVER_PORT=5000
+SERVER_DEBUG=False
+
+# Для загрузки изображений
+UPLOAD_DIR=/var/lib/prompt_manager/uploads
+MAX_IMAGE_SIZE=10485760
+
+# ComfyUI (опционально)
+COMFYUI_HOST=http://localhost:8188
+COMFYUI_API_KEY=
+
+# Бэкапы
+BACKUP_DIR=/var/backups/prompt_manager
+BACKUP_RETENTION_DAYS=30
+```
+
+### 5. Инициализация базы данных
 
 ```bash
-# Разработка
-python run.py
+# Применение миграций
+flask db upgrade
 
-# Продакшен (gunicorn)
+# Или через CLI
+python cli.py db upgrade
+
+# Загрузка начальных данных (опционально)
+python init_data.py
+```
+
+## Запуск
+
+### Режим разработки
+
+```bash
+python run.py
+```
+
+Приложение будет доступно по адресу `http://localhost:5000`
+
+### Режим продакшена
+
+```bash
 gunicorn -w 4 -b 0.0.0.0:5000 run:app
 ```
 
+## Развертывание на сервере
+
+### Автоматическая установка
+
+```bash
+# Запуск от имени root
+sudo bash install.sh
+```
+
+Скрипт `install.sh` выполняет:
+1. Установку системных зависимостей
+2. Создание пользователя `prompt`
+3. Настройку директорий
+4. Установку Python-зависимостей
+5. Настройку PostgreSQL
+6. Клонирование/обновление проекта
+7. Применение миграций
+8. Настройку systemd-сервиса
+9. Конфигурацию nginx
+
+### Ручная установка
+
+1. Создайте директории:
+   ```bash
+   sudo mkdir -p /opt/prompt_manager
+   sudo mkdir -p /var/lib/prompt_manager/uploads
+   sudo mkdir -p /var/backups/prompt_manager
+   ```
+
+2. Скопируйте файлы проекта в `/opt/prompt_manager`
+
+3. Настройте PostgreSQL:
+   ```bash
+   sudo -u postgres psql
+   CREATE DATABASE prompt_manager;
+   CREATE USER prompt_user WITH PASSWORD 'password';
+   GRANT ALL PRIVILEGES ON DATABASE prompt_manager TO prompt_user;
+   ```
+
+4. Установите зависимости и примените миграции
+
+5. Настройте systemd-сервис:
+   ```bash
+   sudo cp deploy/prompt_manager.service /etc/systemd/system/
+   sudo systemctl daemon-reload
+   sudo systemctl enable prompt_manager
+   sudo systemctl start prompt_manager
+   ```
+
+6. Настройте nginx:
+   ```bash
+   sudo cp deploy/nginx.conf /etc/nginx/sites-available/prompt_manager
+   sudo ln -s /etc/nginx/sites-available/prompt_manager /etc/nginx/sites-enabled/
+   sudo nginx -t
+   sudo systemctl reload nginx
+   ```
+
 ## Использование
 
-Приложение не предоставляет внешний API. Все взаимодействия — через вызовы сервисов:
+### Веб-интерфейс
+
+После запуска откройте `http://localhost:5000` в браузере.
+
+Функции:
+- `/` — главная страница
+- `/login` — вход
+- `/register` — регистрация
+- `/categories` — управление категориями
+- `/objects` — управление объектами
+- `/templates` — управление шаблонами
+- `/generator` — генератор промтов
+- `/profile` — профиль пользователя
+- `/admin` — администрирование (для админов)
+
+### API
+
+REST API доступен по адресу `/api/`:
+
+| Метод | Endpoint | Описание |
+|-------|----------|----------|
+| GET | `/api/categories` | Список категорий |
+| POST | `/api/categories` | Создание категории |
+| GET | `/api/objects` | Список объектов |
+| POST | `/api/objects` | Создание объекта |
+| GET | `/api/templates` | Список шаблонов |
+| POST | `/api/templates` | Создание шаблона |
+| POST | `/api/generate` | Генерация промта |
+| POST | `/api/comfyui/send` | Отправка в ComfyUI |
+
+### Программный доступ
 
 ```python
 from app import create_app, db
-from app.services import category_service, object_service, template_service
+from app.services import category_service, object_service, template_service, generator_service
 
 app = create_app()
 
 with app.app_context():
-    # Категории
-    cat = category_service.create_category('character', 'Персонаж')
+    # Создание категории
+    cat = category_service.create_category(
+        name='character',
+        display_name='Персонаж',
+        description='Люди и существа'
+    )
     
-    # Объекты
+    # Создание объекта
     obj = object_service.create_object(
         category_id=cat.id,
         name='Воин',
-        prompt='warrior, armored'
+        description='Сильный воин в броне',
+        prompt='warrior, armored, sword, strong'
     )
     
-    # Шаблоны и генерация
+    # Создание шаблона
     tmpl = template_service.create_template(
-        name='Воин в локации',
-        template_text='{obj1} идет в {obj2}',
-        items=[{'object_id': obj.id, 'position': 0}]
+        name='Персонаж в локации',
+        template_text='{char} идет в {loc}',
+        items=[
+            {'object_id': char_obj.id, 'position': 0, 'placeholder': 'char'},
+            {'object_id': loc_obj.id, 'position': 1, 'placeholder': 'loc'}
+        ]
     )
     
+    # Генерация промта
     result = generator_service.generate_prompt(tmpl.id)
+    print(result['generated_prompt'])
 ```
+
+## CLI-команды
+
+```bash
+# Миграции
+python cli.py db init          # Инициализация миграций
+python cli.py db migrate       # Создание миграции
+python cli.py db upgrade       # Применение миграций
+python cli.py db downgrade     # Откат миграции
+
+# Управление
+python cli.py admin stats      # Статистика системы
+python cli.py admin backup     # Создание бэкапа
+python cli.py admin cleanup    # Очистка изображений
+```
+
+## Конфигурация
+
+Все настройки хранятся в `app/config.py` и читаются из переменных окружения.
+
+| Параметр | Переменная | По умолчанию |
+|----------|------------|--------------|
+| SECRET_KEY | SECRET_KEY | dev-secret-key |
+| DATABASE_URL | DATABASE_URL | postgresql://... |
+| SERVER_HOST | SERVER_HOST | 0.0.0.0 |
+| SERVER_PORT | SERVER_PORT | 5000 |
+| UPLOAD_DIR | UPLOAD_DIR | /var/lib/prompt_manager/uploads |
+| MAX_IMAGE_SIZE | MAX_IMAGE_SIZE | 10485760 |
+| COMFYUI_HOST | COMFYUI_HOST | http://localhost:8188 |
+| BACKUP_DIR | BACKUP_DIR | /var/backups/prompt_manager |
+| DEFAULT_IMAGE_WIDTH | DEFAULT_IMAGE_WIDTH | 512 |
+| DEFAULT_IMAGE_HEIGHT | DEFAULT_IMAGE_HEIGHT | 512 |
+| DEFAULT_STEPS | DEFAULT_STEPS | 20 |
+| DEFAULT_CFG | DEFAULT_CFG | 8 |
+| DEFAULT_SAMPLER | DEFAULT_SAMPLER | euler |
+
+## Требования
+
+- Python 3.11+
+- PostgreSQL 15+
+- Debian 12+ (или другой Linux-дистрибутив)
+- nginx (для продакшена)
+- systemd (для управления сервисом)
 
 ## Лицензия
 
