@@ -48,7 +48,6 @@
 <div class="card" style="margin-top: 1rem;">
     <h3 class="card-title">3. Генерировать</h3>
     <form method="POST" action="{{ url_for('web.generate') }}">
-        {{ csrf_token() }}
         <input type="hidden" name="template_id" id="template-id" value="">
         <div id="selected-items"></div>
         <button type="submit" class="btn btn-primary btn-lg">Сгенерировать промт</button>

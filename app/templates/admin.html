@@ -31,7 +31,6 @@
         <h3 class="card-title">Бэкап</h3>
         <p>Создать резервную копию базы данных и загруженных файлов.</p>
         <form method="POST" action="{{ url_for('web.backup_create') }}">
-            {{ csrf_token() }}
             <button type="submit" class="btn btn-primary">Создать бэкап</button>
         </form>
         
@@ -49,7 +48,6 @@
         <h3 class="card-title">Очистка</h3>
         <p>Удалить неиспользуемые изображения с сервера.</p>
         <form method="POST" action="{{ url_for('web.cleanup_images') }}">
-            {{ csrf_token() }}
             <button type="submit" class="btn btn-warning">Очистить изображения</button>
         </form>
     </div>
