@@ -6,7 +6,7 @@
 <div class="page-header">
     <h1 class="page-title">{{ category.display_name }}</h1>
     <div class="page-actions">
-        <button class="btn btn-secondary" data-modal="add-attribute">Реквизиты</button>
+        <a href="{{ url_for('web.attribute_list', category_id=category.id) }}" class="btn btn-secondary">Реквизиты ({{ attributes|length }})</a>
         <button class="btn btn-primary" data-modal="create-object">Добавить объект</button>
     </div>
 </div>
@@ -118,75 +118,6 @@
     </div>
 </div>
 
-<div class="modal" id="add-attribute">
-    <div class="modal-content">
-        <div class="modal-header">
-            <h2>Управление реквизитами</h2>
-            <button class="modal-close">&times;</button>
-        </div>
-        
-        <h4>Существующие реквизиты:</h4>
-        {% if attributes %}
-        <ul class="attributes-list">
-            {% for attr in attributes %}
-            <li class="attribute-item">
-                <span><strong>{{ attr.display_name }}</strong> ({{ attr.name }}) - {{ attr.field_type }}</span>
-                <a href="{{ url_for('web.attribute_delete', attribute_id=attr.id) }}" class="btn btn-sm btn-danger" data-confirm="Удалить реквизит?">Удал.</a>
-            </li>
-            {% endfor %}
-        </ul>
-        {% else %}
-        <p class="text-muted">Реквизитов пока нет</p>
-        {% endif %}
-        
-        <hr style="margin: 1.5rem 0;">
-        
-        <h4>Создать новый реквизит:</h4>
-        <form method="POST" action="{{ url_for('web.attribute_create', category_id=category.id) }}">
-            <div class="form-group">
-                <label class="form-label">Техническое имя</label>
-                <input type="text" name="name" class="form-input" required placeholder="gender">
-            </div>
-            <div class="form-group">
-                <label class="form-label">Отображаемое имя</label>
-                <input type="text" name="display_name" class="form-input" required placeholder="Пол">
-            </div>
-            <div class="form-group">
-                <label class="form-label">Тип поля</label>
-                <select name="field_type" class="form-select" required>
-                    <option value="bool">Да/Нет</option>
-                    <option value="int">Число</option>
-                    <option value="int_list">Число из списка</option>
-                    <option value="str">Текст</option>
-                    <option value="str_list">Выбор из списка</option>
-                </select>
-            </div>
-            <div class="form-group int-list-params" style="display: none;">
-                <label class="form-label">Минимум</label>
-                <input type="number" name="min_value" class="form-input" value="0">
-            </div>
-            <div class="form-group int-list-params" style="display: none;">
-                <label class="form-label">Максимум</label>
-                <input type="number" name="max_value" class="form-input" value="100">
-            </div>
-            <div class="form-group int-list-params" style="display: none;">
-                <label class="form-label">Шаг</label>
-                <input type="number" name="step" class="form-input" value="1">
-            </div>
-            <div class="form-group str-list-params" style="display: none;">
-                <label class="form-label">Варианты (через запятую)</label>
-                <input type="text" name="options" class="form-input" placeholder="мужской, женский">
-            </div>
-            <div class="form-group">
-                <label class="form-label">
-                    <input type="checkbox" name="is_required"> Обязательное поле
-                </label>
-            </div>
-            <button type="submit" class="btn btn-primary">Создать реквизит</button>
-        </form>
-    </div>
-</div>
-
 <script>
 function previewImage(input) {
     const preview = document.getElementById('image-preview');
@@ -226,22 +157,16 @@ document.querySelector('[name="field_type"]').addEventListener('change', functio
     font-size: 0.75rem;
 }
 
-.attributes-list {
-    list-style: none;
-    padding: 0;
-}
-
-.attribute-item {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    padding: 0.5rem;
-    border-bottom: 1px solid var(--border-color);
-}
-
 .page-actions {
     display: flex;
     gap: 0.5rem;
+}
+
+.badge {
+    background-color: #e2e8f0;
+    padding: 0.125rem 0.5rem;
+    border-radius: 9999px;
+    font-size: 0.75rem;
 }
 </style>
 {% endblock %}

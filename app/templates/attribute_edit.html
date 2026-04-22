@@ -1,0 +1,66 @@
+{% extends "base.html" %}
+
+{% block title %}Редактировать реквизит - Prompt Manager{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <h1 class="page-title">Редактировать реквизит</h1>
+    <a href="{{ url_for('web.attribute_list', category_id=attribute.category_id) }}" class="btn btn-secondary">← Реквизиты</a>
+</div>
+
+<div class="card" style="max-width: 500px;">
+    <form method="POST" action="{{ url_for('web.attribute_update', attribute_id=attribute.id) }}">
+        <div class="form-group">
+            <label class="form-label">Техническое имя *</label>
+            <input type="text" name="name" class="form-input" required value="{{ attribute.name }}">
+        </div>
+        <div class="form-group">
+            <label class="form-label">Отображаемое имя *</label>
+            <input type="text" name="display_name" class="form-input" required value="{{ attribute.display_name }}">
+        </div>
+        <div class="form-group">
+            <label class="form-label">Тип поля *</label>
+            <select name="field_type" class="form-select" required id="field-type-select">
+                <option value="bool" {% if attribute.field_type == 'bool' %}selected{% endif %}>Да/Нет (checkbox)</option>
+                <option value="int" {% if attribute.field_type == 'int' %}selected{% endif %}>Число</option>
+                <option value="int_list" {% if attribute.field_type == 'int_list' %}selected{% endif %}>Число из списка</option>
+                <option value="str" {% if attribute.field_type == 'str' %}selected{% endif %}>Текст</option>
+                <option value="str_list" {% if attribute.field_type == 'str_list' %}selected{% endif %}>Выбор из списка</option>
+            </select>
+        </div>
+        <div class="form-group int-list-params" style="display: {% if attribute.field_type == 'int_list' %}block{% else %}none{% endif %};">
+            <label class="form-label">Минимум</label>
+            <input type="number" name="min_value" class="form-input" value="{{ attribute.min_value or 0 }}">
+        </div>
+        <div class="form-group int-list-params" style="display: {% if attribute.field_type == 'int_list' %}block{% else %}none{% endif %};">
+            <label class="form-label">Максимум</label>
+            <input type="number" name="max_value" class="form-input" value="{{ attribute.max_value or 100 }}">
+        </div>
+        <div class="form-group int-list-params" style="display: {% if attribute.field_type == 'int_list' %}block{% else %}none{% endif %};">
+            <label class="form-label">Шаг</label>
+            <input type="number" name="step" class="form-input" value="{{ attribute.step or 1 }}">
+        </div>
+        <div class="form-group str-list-params" style="display: {% if attribute.field_type == 'str_list' %}block{% else %}none{% endif %};">
+            <label class="form-label">Варианты (через запятую)</label>
+            <input type="text" name="options" class="form-input" value="{{ attribute.options|join(', ') if attribute.options else '' }}">
+        </div>
+        <div class="form-group">
+            <label class="form-label">
+                <input type="checkbox" name="is_required" {% if attribute.is_required %}checked{% endif %}> Обязательное поле
+            </label>
+        </div>
+        <div class="actions">
+            <button type="submit" class="btn btn-primary">Сохранить</button>
+        </div>
+    </form>
+</div>
+
+<script>
+document.getElementById('field-type-select').addEventListener('change', function() {
+    const showIntList = this.value === 'int_list';
+    const showStrList = this.value === 'str_list';
+    document.querySelectorAll('.int-list-params').forEach(el => el.style.display = showIntList ? 'block' : 'none');
+    document.querySelectorAll('.str-list-params').forEach(el => el.style.display = showStrList ? 'block' : 'none');
+});
+</script>
+{% endblock %}

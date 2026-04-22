@@ -115,6 +115,16 @@ def category_delete(category_id):
     return redirect(url_for('web.categories'))
 
 
+@web.route('/categories/<category_id>/attributes')
+def attribute_list(category_id):
+    cat = category_service.get_category_by_id(category_id)
+    if not cat:
+        flash('Категория не найдена', 'error')
+        return redirect(url_for('web.categories'))
+    attrs = category_service.get_category_attributes(category_id)
+    return render_template('attribute_list.html', category=cat, attributes=attrs)
+
+
 @web.route('/categories/<category_id>/attributes/create', methods=['POST'])
 def attribute_create(category_id):
     try:
@@ -152,25 +162,64 @@ def attribute_create(category_id):
     return redirect(url_for('web.category_detail', category_id=category_id))
 
 
-@web.route('/attributes/<attribute_id>/delete')
-def attribute_delete(attribute_id):
-    from app.services import category_service
-    attr = category_service.get_category_attributes(None)
+@web.route('/attributes/<attribute_id>/edit')
+def attribute_edit(attribute_id):
+    from app.models import AttributeDef
+    attr = db.session.get(AttributeDef, attribute_id)
+    if not attr:
+        flash('Реквизит не найден', 'error')
+        return redirect(url_for('web.categories'))
+    return render_template('attribute_edit.html', attribute=attr)
+
+
+@web.route('/attributes/<attribute_id>/update', methods=['POST'])
+def attribute_update(attribute_id):
     try:
         from app.models import AttributeDef
-        attribute_def = db.session.get(AttributeDef, attribute_id)
-        if not attribute_def:
+        attr = db.session.get(AttributeDef, attribute_id)
+        if not attr:
             flash('Реквизит не найден', 'error')
             return redirect(url_for('web.categories'))
         
-        category_id = attribute_def.category_id
-        db.session.delete(attribute_def)
+        attr.name = request.form['name']
+        attr.display_name = request.form['display_name']
+        attr.field_type = request.form['field_type']
+        attr.is_required = request.form.get('is_required') == 'on'
+        
+        if attr.field_type == 'int_list':
+            attr.min_value = request.form.get('min_value', type=int)
+            attr.max_value = request.form.get('max_value', type=int)
+            attr.step = request.form.get('step', type=int)
+        
+        if attr.field_type == 'str_list':
+            options_str = request.form.get('options', '')
+            attr.options = [o.strip() for o in options_str.split(',') if o.strip()]
+        
         db.session.commit()
-        flash('Реквизит удален', 'success')
+        flash('Реквизит обновлен', 'success')
     except Exception as e:
         flash(f'Ошибка: {str(e)}', 'error')
     
-    return redirect(url_for('web.category_detail', category_id=category_id))
+    return redirect(url_for('web.attribute_list', category_id=attr.category_id))
+
+
+@web.route('/attributes/<attribute_id>/delete')
+def attribute_delete(attribute_id):
+    from app.models import AttributeDef
+    attr = db.session.get(AttributeDef, attribute_id)
+    if not attr:
+        flash('Реквизит не найден', 'error')
+        return redirect(url_for('web.categories'))
+    
+    category_id = attr.category_id
+    try:
+        db.session.delete(attr)
+        db.session.commit()
+        flash('Реквизит удален', 'success')
+    except Exception as e:
+        flash(f'Ошибка удаления: {str(e)}', 'error')
+    
+    return redirect(url_for('web.attribute_list', category_id=category_id))
 
 
 @web.route('/objects')
