@@ -118,7 +118,50 @@ def category_delete(category_id):
 @web.route('/attributes')
 def attributes():
     all_attrs = category_service.get_all_attributes()
-    return render_template('attributes.html', attributes=all_attrs)
+    categories = category_service.get_all_categories()
+    return render_template('attributes.html', attributes=all_attrs, categories=categories)
+
+
+@web.route('/attributes/create', methods=['POST'])
+def attribute_global_create():
+    category_id = request.form.get('category_id')
+    if not category_id:
+        flash('Выберите категорию', 'error')
+        return redirect(url_for('web.attributes'))
+    
+    field_type = request.form.get('field_type')
+    
+    min_value = None
+    max_value = None
+    step = None
+    options = None
+    
+    if field_type == 'int_list':
+        min_value = request.form.get('min_value', type=int)
+        max_value = request.form.get('max_value', type=int)
+        step = request.form.get('step', type=int)
+    
+    if field_type == 'str_list':
+        options_str = request.form.get('options', '')
+        options = [o.strip() for o in options_str.split(',') if o.strip()]
+    
+    try:
+        category_service.create_category_attribute(
+            category_id=category_id,
+            name=request.form['name'],
+            display_name=request.form['display_name'],
+            field_type=field_type,
+            min_value=min_value,
+            max_value=max_value,
+            step=step,
+            options=options,
+            is_required=request.form.get('is_required') == 'on'
+        )
+        flash('Реквизит создан', 'success')
+    except ValueError as e:
+        flash(str(e), 'error')
+    
+    return redirect(url_for('web.attributes'))
 
 
 @web.route('/categories/<category_id>/attributes')
