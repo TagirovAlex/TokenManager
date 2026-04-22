@@ -677,10 +677,19 @@ def prompts_upload_image(result_id):
     if file and allowed_file(file.filename):
         filename = f"result_{result_id}_{file.filename}"
         upload_dir = current_app.config.get('UPLOAD_DIR')
-        image_path = process_and_save_image(file, upload_dir, filename)
-        
-        generator_service.update_result(result_id, image_path=image_path)
-        flash('Изображение добавлено', 'success')
+        if not upload_dir:
+            current_app.logger.error(f"UPLOAD_DIR not configured")
+            flash('Ошибка конфигурации: UPLOAD_DIR не задан', 'error')
+            return redirect(url_for('web.prompts_edit', result_id=result_id))
+        try:
+            image_path = process_and_save_image(file, upload_dir, filename)
+            generator_service.update_result(result_id, image_path=image_path)
+            flash('Изображение добавлено', 'success')
+        except Exception as e:
+            current_app.logger.error(f"Failed to upload image: {e}", exc_info=True)
+            flash(f'Ошибка загрузки: {str(e)}', 'error')
+    else:
+        flash('Недопустимый файл изображения', 'error')
     
     return redirect(url_for('web.prompts_edit', result_id=result_id))
 
