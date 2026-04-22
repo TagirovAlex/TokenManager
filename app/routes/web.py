@@ -115,6 +115,12 @@ def category_delete(category_id):
     return redirect(url_for('web.categories'))
 
 
+@web.route('/attributes')
+def attributes():
+    all_attrs = category_service.get_all_attributes()
+    return render_template('attributes.html', attributes=all_attrs)
+
+
 @web.route('/categories/<category_id>/attributes')
 def attribute_list(category_id):
     cat = category_service.get_category_by_id(category_id)

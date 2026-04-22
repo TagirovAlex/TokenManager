@@ -16,6 +16,7 @@
                 <a href="{{ url_for('web.categories') }}" class="nav-link">Категории</a>
                 <a href="{{ url_for('web.objects') }}" class="nav-link">Объекты</a>
                 <a href="{{ url_for('web.templates') }}" class="nav-link">Шаблоны</a>
+                <a href="{{ url_for('web.attributes') }}" class="nav-link">Реквизиты</a>
                 <a href="{{ url_for('web.generator') }}" class="nav-link">Генератор</a>
                 {% if session.get('is_admin') %}
                 <a href="{{ url_for('web.admin') }}" class="nav-link">Админ</a>

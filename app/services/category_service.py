@@ -61,6 +61,10 @@ def get_category_attributes(category_id):
     return AttributeDef.query.filter_by(category_id=category_id).all()
 
 
+def get_all_attributes():
+    return AttributeDef.query.all()
+
+
 def create_category_attribute(category_id, name, display_name, field_type, 
                              min_value=None, max_value=None, step=None, 
                              options=None, is_required=False):

@@ -36,3 +36,11 @@ uploads/
 
 # Trash
 .trash/
+
+# Local only (never push)
+pytest.ini
+preview.html
+alembic.ini
+TODO.md
+SPEC.md
+AGENTS.md
