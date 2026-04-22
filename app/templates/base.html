@@ -18,6 +18,7 @@
                 <a href="{{ url_for('web.templates') }}" class="nav-link">Шаблоны</a>
                 <a href="{{ url_for('web.attributes') }}" class="nav-link">Реквизиты</a>
                 <a href="{{ url_for('web.generator') }}" class="nav-link">Генератор</a>
+                <a href="{{ url_for('web.prompts') }}" class="nav-link">Промты</a>
                 {% if session.get('is_admin') %}
                 <a href="{{ url_for('web.admin') }}" class="nav-link">Админ</a>
                 {% endif %}

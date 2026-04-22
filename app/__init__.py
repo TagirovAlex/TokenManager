@@ -14,10 +14,11 @@ def create_app():
     app = Flask(__name__)
     
     app.config['SECRET_KEY'] = os.getenv('SECRET_KEY', 'dev-secret-key-change-in-production')
+    app.config['SESSION_KEY'] = os.getenv('SESSION_KEY', 'prompt-manager-sessions')
     app.config['WTF_CSRF_ENABLED'] = False
     app.config['WTF_CSRF_TIME_LIMIT'] = None
     app.config['SQLALCHEMY_DATABASE_URI'] = os.getenv('DATABASE_URL', 
-        'postgresql://prompt_user:password@localhost:5432/prompt_manager')
+        'postgresql://prompt_manager:prompt123@localhost:5432/prompt_manager')
     app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
     
     app.config['SERVER_HOST'] = os.getenv('SERVER_HOST', '0.0.0.0')
@@ -42,8 +43,11 @@ def create_app():
     app.config['DEFAULT_SAMPLER'] = os.getenv('DEFAULT_SAMPLER', 'euler')
     
     app.config['SESSION_TYPE'] = 'filesystem'
+    app.config['SESSION_FILE_DIR'] = os.getenv('SESSION_FILE_DIR', '/tmp/flask_sessions')
     app.config['SESSION_PERMANENT'] = False
     app.config['PERMANENT_SESSION_LIFETIME'] = 86400
+    
+    os.makedirs(app.config['SESSION_FILE_DIR'], exist_ok=True)
     
     db.init_app(app)
     csrf.init_app(app)

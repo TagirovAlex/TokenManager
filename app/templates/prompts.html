@@ -1,0 +1,75 @@
+{% extends "base.html" %}
+
+{% block title %}Сохраненные промты - Prompt Manager{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <h1 class="page-title">Сохраненные промты</h1>
+    <a href="{{ url_for('web.generator') }}" class="btn btn-primary">Создать новый</a>
+</div>
+
+{% if results %}
+<div class="prompts-grid">
+    {% for result in results %}
+    <div class="card prompt-card">
+        {% if result.image_path %}
+        <img src="{{ url_for('serve_upload', filename=result.image_path) }}" class="prompt-image" alt="Result">
+        {% endif %}
+        <div class="prompt-text">{{ result.generated_prompt }}</div>
+        <div class="prompt-meta">
+            <small>{{ result.created_at.strftime('%Y-%m-%d %H:%M') if result.created_at else '' }}</small>
+        </div>
+        <div class="actions">
+            <button class="btn btn-sm btn-secondary" onclick="copyToClipboard('{{ result.generated_prompt }}')">Копировать</button>
+            <form method="POST" action="{{ url_for('web.comfyui_send') }}" style="display: inline;">
+                <input type="hidden" name="prompt" value="{{ result.generated_prompt }}">
+                <button type="submit" class="btn btn-sm btn-primary">В ComfyUI</button>
+            </form>
+            <a href="{{ url_for('web.prompts_delete', result_id=result.id) }}" class="btn btn-sm btn-danger" data-confirm="Удалить?">Удалить</a>
+        </div>
+    </div>
+    {% endfor %}
+</div>
+{% else %}
+<div class="empty-state">
+    <div class="empty-state-icon">📝</div>
+    <p>Промтов пока нет</p>
+    <a href="{{ url_for('web.generator') }}" class="btn btn-primary">Создать первый промт</a>
+</div>
+{% endif %}
+
+<style>
+.prompts-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+    gap: 1rem;
+    margin-top: 1rem;
+}
+
+.prompt-card {
+    padding: 1rem;
+}
+
+.prompt-image {
+    max-width: 100%;
+    border-radius: 0.5rem;
+    margin-bottom: 0.5rem;
+}
+
+.prompt-text {
+    font-family: monospace;
+    font-size: 0.875rem;
+    background: var(--bg-color);
+    padding: 0.5rem;
+    border-radius: 0.25rem;
+    margin-bottom: 0.5rem;
+    white-space: pre-wrap;
+    word-break: break-word;
+}
+
+.prompt-meta {
+    color: var(--text-muted);
+    margin-bottom: 0.5rem;
+}
+</style>
+{% endblock %}

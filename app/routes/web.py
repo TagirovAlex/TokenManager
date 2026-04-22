@@ -562,6 +562,49 @@ def generator():
                          generated_prompt=generated_prompt)
 
 
+@web.route('/prompts')
+def prompts():
+    from app.services import generator_service
+    results = generator_service.get_results()
+    return render_template('prompts.html', results=results)
+
+
+@web.route('/prompts/save', methods=['POST'])
+def prompts_save():
+    prompt = request.form.get('prompt')
+    template_id = request.form.get('template_id')
+    image_path = request.form.get('image_path')
+    
+    if not prompt:
+        flash('Введите промт', 'error')
+        return redirect(url_for('web.generator'))
+    
+    try:
+        from app.services import generator_service
+        generator_service.save_result(
+            template_id=template_id,
+            generated_prompt=prompt,
+            image_path=image_path
+        )
+        flash('Промт сохранен', 'success')
+    except ValueError as e:
+        flash(str(e), 'error')
+    
+    return redirect(url_for('web.prompts'))
+
+
+@web.route('/prompts/delete/<result_id>')
+def prompts_delete(result_id):
+    try:
+        from app.services import generator_service
+        generator_service.delete_result(result_id)
+        flash('Промт удален', 'success')
+    except ValueError as e:
+        flash(str(e), 'error')
+    
+    return redirect(url_for('web.prompts'))
+
+
 @web.route('/generate', methods=['POST'])
 def generate():
     template_id = request.form.get('template_id')

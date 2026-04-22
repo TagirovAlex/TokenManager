@@ -103,8 +103,6 @@ class CategoryAttribute(db.Model):
     category_id = db.Column(db.String(36), db.ForeignKey('categories.id'), nullable=False)
     attribute_def_id = db.Column(db.String(36), db.ForeignKey('attribute_defs.id'), nullable=False)
     
-    category = db.relationship('Category', backref='attribute_links')
-    
     __table_args__ = (
         db.UniqueConstraint('category_id', 'attribute_def_id', name='uq_category_attribute'),
     )
