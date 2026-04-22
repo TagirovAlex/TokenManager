@@ -8,4 +8,3 @@ from .image_utils import (
     delete_image,
     ALLOWED_EXTENSIONS
 )
-from . import uuid_utils
