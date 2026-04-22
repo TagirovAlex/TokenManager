@@ -1,5 +1,5 @@
 import os
-from flask import Flask
+from flask import Flask, render_template
 from flask_sqlalchemy import SQLAlchemy
 from flask_wtf.csrf import CSRFProtect
 from dotenv import load_dotenv
@@ -63,6 +63,20 @@ def create_app():
     def serve_upload(filename):
         from flask import send_from_directory
         return send_from_directory(upload_dir, filename)
+    
+    @app.errorhandler(404)
+    def not_found_error(e):
+        return render_template('error.html', error_code=404, error_message='Страница не найдена'), 404
+    
+    @app.errorhandler(500)
+    def internal_error(e):
+        return render_template('error.html', error_code=500, error_message='Внутренняя ошибка сервера'), 500
+    
+    @app.errorhandler(Exception)
+    def handle_exception(e):
+        import traceback
+        traceback.print_exc()
+        return render_template('error.html', error_code=500, error_message=str(e)), 500
     
     with app.app_context():
         db.create_all()
