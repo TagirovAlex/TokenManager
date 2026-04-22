@@ -14,7 +14,7 @@ def create_app():
     app = Flask(__name__)
     
     app.config['SECRET_KEY'] = os.getenv('SECRET_KEY', 'dev-secret-key-change-in-production')
-    app.config['WTF_CSRF_ENABLED'] = True
+    app.config['WTF_CSRF_ENABLED'] = False
     app.config['WTF_CSRF_TIME_LIMIT'] = None
     app.config['SQLALCHEMY_DATABASE_URI'] = os.getenv('DATABASE_URL', 
         'postgresql://prompt_user:password@localhost:5432/prompt_manager')
