@@ -30,10 +30,9 @@ Thumbs.db
 
 # Backups
 *.tar.gz
-/var/backups/
 
-# Uploads
-/var/lib/prompt_manager/uploads/
+# Uploads (local development)
+uploads/
 
 # Trash
 .trash/
