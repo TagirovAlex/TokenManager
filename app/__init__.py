@@ -52,6 +52,14 @@ def create_app():
     app.register_blueprint(web)
     app.register_blueprint(auth)
     
+    upload_dir = os.getenv('UPLOAD_DIR', '/var/lib/prompt_manager/uploads')
+    os.makedirs(upload_dir, exist_ok=True)
+    
+    @app.route('/uploads/<path:filename>')
+    def serve_upload(filename):
+        from flask import send_from_directory
+        return send_from_directory(upload_dir, filename)
+    
     with app.app_context():
         db.create_all()
     

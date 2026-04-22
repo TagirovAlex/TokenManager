@@ -13,3 +13,4 @@ requests
 click
 werkzeug
 wtforms
+Pillow

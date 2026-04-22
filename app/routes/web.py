@@ -1,4 +1,5 @@
-from flask import Blueprint, render_template, request, redirect, url_for, flash
+from datetime import datetime
+from flask import Blueprint, render_template, request, redirect, url_for, flash, current_app
 from app.services import (
     category_service,
     object_service,
@@ -6,6 +7,7 @@ from app.services import (
     generator_service,
     admin_service
 )
+from app.utils.image_utils import allowed_file, process_and_save_image, generate_image_filename
 
 web = Blueprint('web', __name__)
 
@@ -75,16 +77,31 @@ def objects():
 @web.route('/objects/create', methods=['POST'])
 def object_create():
     try:
+        image_path = request.form.get('image_path')
+        
+        if 'image' in request.files:
+            file = request.files['image']
+            if file and file.filename and allowed_file(file.filename):
+                category_id = request.form['category_id']
+                temp_id = f"temp_{datetime.now().timestamp()}"
+                filename = generate_image_filename(file.filename, temp_id)
+                upload_dir = current_app.config.get('UPLOAD_DIR', '/var/lib/prompt_manager/uploads')
+                image_path = process_and_save_image(file, upload_dir, filename)
+        
         object_service.create_object(
             category_id=request.form['category_id'],
             name=request.form['name'],
             prompt=request.form['prompt'],
             description=request.form.get('description'),
-            image_path=request.form.get('image_path')
+            image_path=image_path
         )
         flash('Объект создан', 'success')
     except ValueError as e:
         flash(str(e), 'error')
+    
+    cat_id = request.form.get('category_id')
+    if cat_id:
+        return redirect(url_for('web.category_detail', category_id=cat_id))
     return redirect(url_for('web.objects'))
 
 
@@ -102,12 +119,21 @@ def object_edit(object_id):
 @web.route('/objects/update/<object_id>', methods=['POST'])
 def object_update(object_id):
     try:
+        image_path = request.form.get('image_path')
+        
+        if 'image' in request.files:
+            file = request.files['image']
+            if file and file.filename and allowed_file(file.filename):
+                filename = generate_image_filename(file.filename, object_id)
+                upload_dir = current_app.config.get('UPLOAD_DIR', '/var/lib/prompt_manager/uploads')
+                image_path = process_and_save_image(file, upload_dir, filename)
+        
         object_service.update_object(
             object_id=object_id,
             name=request.form['name'],
             prompt=request.form['prompt'],
             description=request.form.get('description'),
-            image_path=request.form.get('image_path'),
+            image_path=image_path,
             category_id=request.form['category_id']
         )
         flash('Объект обновлен', 'success')

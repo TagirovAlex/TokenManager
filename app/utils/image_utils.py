@@ -1,8 +1,11 @@
 import os
 import hashlib
+from datetime import datetime
+from PIL import Image
 
 
 ALLOWED_EXTENSIONS = {'png', 'jpg', 'jpeg', 'gif', 'webp'}
+TARGET_SIZE = 512
 
 
 def allowed_file(filename):
@@ -22,7 +25,7 @@ def generate_image_filename(original_filename, object_id=None):
         ext = 'png'
     
     if object_id:
-        return f"{object_id}_{hashlib.md5(str(datetime.now()).encode()).hexdigest()[:8]}.{ext}"
+        return f"{object_id}.{ext}"
     
     return f"{hashlib.md5(str(datetime.now()).encode()).hexdigest()[:16]}.{ext}"
 
@@ -43,4 +46,32 @@ def delete_image(image_path):
     return False
 
 
-from datetime import datetime
+def process_and_save_image(file, upload_dir, filename):
+    ensure_upload_dir(upload_dir)
+    
+    img = Image.open(file)
+    
+    width, height = img.size
+    min_dim = min(width, height)
+    
+    left = (width - min_dim) // 2
+    top = (height - min_dim) // 2
+    right = left + min_dim
+    bottom = top + min_dim
+    
+    img = img.crop((left, top, right, bottom))
+    
+    img = img.resize((TARGET_SIZE, TARGET_SIZE), Image.Resampling.LANCZOS)
+    
+    ext = get_extension(filename)
+    if not ext:
+        ext = 'png'
+    
+    output_path = os.path.join(upload_dir, filename)
+    
+    if ext.lower() in ['jpg', 'jpeg']:
+        img.save(output_path, 'JPEG', quality=95)
+    else:
+        img.save(output_path)
+    
+    return f"/uploads/{filename}"

@@ -1,0 +1,90 @@
+{% extends "base.html" %}
+
+{% block title %}{{ category.display_name }} - Prompt Manager{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <h1 class="page-title">{{ category.display_name }}</h1>
+    <button class="btn btn-primary" data-modal="create-object">Добавить объект</button>
+</div>
+
+{% if category.description %}
+<p class="text-muted">{{ category.description }}</p>
+{% endif %}
+
+<div id="objects-list">
+    {% for obj in objects %}
+    <div class="object-card">
+        {% if obj.image_path %}
+        <img src="{{ obj.image_path }}" class="object-card-image" alt="{{ obj.name }}">
+        {% endif %}
+        <div class="object-card-content">
+            <div class="object-card-title">{{ obj.name }}</div>
+            <div class="object-card-prompt">{{ obj.prompt }}</div>
+            {% if obj.description %}
+            <small>{{ obj.description }}</small>
+            {% endif %}
+        </div>
+        <div class="actions">
+            <button class="btn btn-sm btn-secondary" onclick="copyToClipboard('{{ obj.prompt }}')">Копировать</button>
+            <a href="{{ url_for('web.object_edit', object_id=obj.id) }}" class="btn btn-sm btn-secondary">Ред.</a>
+            <a href="{{ url_for('web.object_delete', object_id=obj.id) }}" class="btn btn-sm btn-danger" data-confirm="Удалить объект?">Удал.</a>
+        </div>
+    </div>
+    {% else %}
+    <div class="empty-state">
+        <div class="empty-state-icon">📦</div>
+        <p>Объектов пока нет</p>
+        <button class="btn btn-primary" data-modal="create-object">Создать первый объект</button>
+    </div>
+    {% endfor %}
+</div>
+
+<div class="modal" id="create-object">
+    <div class="modal-content">
+        <div class="modal-header">
+            <h2>Создать объект</h2>
+            <button class="modal-close">&times;</button>
+        </div>
+        <form method="POST" action="{{ url_for('web.object_create') }}" enctype="multipart/form-data">
+            <div class="form-group">
+                <label class="form-label">Имя</label>
+                <input type="text" name="name" class="form-input" required placeholder="Воин">
+            </div>
+            <div class="form-group">
+                <label class="form-label">Промт</label>
+                <textarea name="prompt" class="form-textarea" required placeholder="warrior, armored, strong"></textarea>
+            </div>
+            <div class="form-group">
+                <label class="form-label">Описание</label>
+                <textarea name="description" class="form-textarea" placeholder="Описание объекта"></textarea>
+            </div>
+            <div class="form-group">
+                <label class="form-label">Изображение</label>
+                <input type="file" name="image" class="form-input" accept="image/*" onchange="previewImage(this)">
+                <div id="image-preview" style="margin-top: 10px; display: none;">
+                    <img id="preview-img" style="max-width: 200px; max-height: 200px; border-radius: 8px;">
+                </div>
+            </div>
+            <input type="hidden" name="category_id" value="{{ category.id }}">
+            <button type="submit" class="btn btn-primary">Создать</button>
+        </form>
+    </div>
+</div>
+
+<script>
+function previewImage(input) {
+    const preview = document.getElementById('image-preview');
+    const img = document.getElementById('preview-img');
+    
+    if (input.files && input.files[0]) {
+        const reader = new FileReader();
+        reader.onload = function(e) {
+            img.src = e.target.result;
+            preview.style.display = 'block';
+        }
+        reader.readAsDataURL(input.files[0]);
+    }
+}
+</script>
+{% endblock %}
