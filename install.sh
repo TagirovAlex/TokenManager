@@ -60,24 +60,25 @@ chown -R $USER:$GROUP /var/lib/prompt_manager
 chown -R $USER:$GROUP /var/backups/prompt_manager
 
 echo "[6/8] Настройка приложения..."
-# Используем .env из текущей директории запуска (если есть)
+# Всегда клонируем/обновляем проект
+if [ ! -f "$APP_DIR/run.py" ]; then
+    rm -rf $APP_DIR
+    git clone https://github.com/TagirovAlex/TokenManager.git $APP_DIR
+else
+    cd $APP_DIR && git pull origin master
+fi
+
+# Копируем .env из текущей директории запуска (приоритет)
 CURRENT_DIR=$(pwd)
 if [ -f "$CURRENT_DIR/.env" ]; then
     cp "$CURRENT_DIR/.env" "$APP_DIR/.env"
     echo "Использован .env из текущей директории"
-else
-    # Клонируем проект, если директория пустая
-    if [ ! -f "$APP_DIR/run.py" ]; then
-        rm -rf $APP_DIR
-        git clone https://github.com/TagirovAlex/TokenManager.git $APP_DIR
+elif [ ! -f "$APP_DIR/.env" ]; then
+    # Создаём новый .env если нет
+    if [ -z "$DB_PASS" ]; then
+        DB_PASS=$(openssl rand -base64 32 | tr -dc 'a-zA-Z0-9' | head -c 32)
     fi
-    
-    # Используем существующий .env или создаём новый
-    if [ ! -f "$APP_DIR/.env" ]; then
-        if [ -z "$DB_PASS" ]; then
-            DB_PASS=$(openssl rand -base64 32 | tr -dc 'a-zA-Z0-9' | head -c 32)
-        fi
-        cat > $APP_DIR/.env << EOF
+    cat > $APP_DIR/.env << EOF
 SECRET_KEY=$(openssl rand -base64 32)
 DATABASE_URL=postgresql://$DB_USER:$DB_PASS@localhost:5432/$DB_NAME
 SERVER_HOST=127.0.0.1
@@ -87,7 +88,6 @@ UPLOAD_DIR=/var/lib/prompt_manager/uploads
 BACKUP_DIR=/var/backups/prompt_manager
 COMFYUI_HOST=http://localhost:8188
 EOF
-    fi
 fi
 
 python3.11 -m venv $APP_DIR/venv
