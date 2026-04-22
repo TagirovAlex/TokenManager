@@ -5,7 +5,7 @@ import subprocess
 import re
 from datetime import datetime
 from app import db
-from app.models import Category, Object, Template, TemplateResult
+from app.models import Category, Object, Template, TemplateResult, AttributeDef
 
 
 def get_stats():
@@ -13,7 +13,8 @@ def get_stats():
         'categories': Category.query.count(),
         'objects': Object.query.count(),
         'templates': Template.query.count(),
-        'results': TemplateResult.query.count()
+        'results': TemplateResult.query.count(),
+        'attributes': AttributeDef.query.count()
     }
 
 
