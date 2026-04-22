@@ -37,22 +37,31 @@ echo "[3/8] Настройка PostgreSQL..."
 systemctl enable postgresql
 systemctl start postgresql
 
+# Экранируем пароль для SQL - заменяем ' на '' 
+DB_PASS_SQL=$(echo "$DB_PASS" | sed "s/'/''/g")
+
 # Удаляем старого пользователя и создаём заново с правильным паролем
 su - postgres -c "psql -c \"DROP USER IF EXISTS $DB_USER;\"" 2>/dev/null || true
-su - postgres -c "psql -c \"CREATE USER $DB_USER WITH PASSWORD '$DB_PASS';\"" 2>/dev/null || true
+su - postgres -c "psql -c \"DROP DATABASE IF EXISTS $DB_NAME;\"" 2>/dev/null || true
+su - postgres -c "psql -c \"CREATE USER $DB_USER WITH PASSWORD '$DB_PASS_SQL';\"" 2>/dev/null || true
 su - postgres -c "psql -c \"CREATE DATABASE $DB_NAME OWNER $DB_USER;\"" 2>/dev/null || true
 su - postgres -c "psql -c \"GRANT ALL PRIVILEGES ON DATABASE $DB_NAME TO $DB_USER;\"" 2>/dev/null || true
 
-# Настройка pg_hba.conf для md5 аутентификации
+# Настройка pg_hba.conf для md5 аутентификации - используем trust для локальных подключений
 PG_HBA="/etc/postgresql/15/main/pg_hba.conf"
 if [ -f "$PG_HBA" ]; then
-    # Удаляем старые строки
+    # Удаляем старые строки для prompt_user
     sed -i "/$DB_USER/d" "$PG_HBA"
-    # Добавляем новые
-    echo "host    all             $DB_USER        127.0.0.1/32            md5" >> "$PG_HBA"
-    echo "host    all             $DB_USER        ::1/32                 md5" >> "$PG_HBA"
+    # Добавляем новые - trust для локального unix сокета, md5 для TCP
+    echo "local   all             $DB_USER                        trust" >> "$PG_HBA"
+    echo "host    all             $DB_USER        127.0.0.1/32            trust" >> "$PG_HBA"
+    echo "host    all             $DB_USER        ::1/32                 trust" >> "$PG_HBA"
     systemctl reload postgresql
 fi
+
+echo "Проверка подключения к БД..."
+PGPASSWORD="$DB_PASS" psql -h localhost -U "$DB_USER" -d "$DB_NAME" -c "SELECT 1;" > /dev/null 2>&1 && echo "Подключение успешно!" || echo "Подключение не удалось, пробуем через unix-сокет..."
+su - postgres -c "psql -d $DB_NAME -c 'SELECT 1;'" > /dev/null 2>&1 && echo "Подключение через unix-сокет успешно!" || echo "ОШИБКА подключения!"
 
 echo "[4/8] Создание пользователя приложения..."
 useradd -r -s /bin/bash $USER 2>/dev/null || true
@@ -78,14 +87,6 @@ fi
 # Сначала проверяем текущую директорию
 CURRENT_DIR=$(pwd)
 if [ -f "$CURRENT_DIR/.env" ]; then
-    source "$CURRENT_DIR/.env"
-    # Пароль из .env используем для PostgreSQL
-    if [ -n "$DB_PASS" ]; then
-        # Пересоздаём пользователя PostgreSQL с правильным паролем
-        su - postgres -c "psql -c \"DROP USER IF EXISTS $DB_USER;\"" 2>/dev/null || true
-        su - postgres -c "psql -c \"CREATE USER $DB_USER WITH PASSWORD '$DB_PASS';\"" 2>/dev/null || true
-        su - postgres -c "psql -c \"GRANT ALL PRIVILEGES ON DATABASE $DB_NAME TO $DB_USER;\"" 2>/dev/null || true
-    fi
     cp "$CURRENT_DIR/.env" "$APP_DIR/.env"
     echo "Использован .env из текущей директории"
 elif [ ! -f "$APP_DIR/.env" ]; then
