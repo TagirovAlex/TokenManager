@@ -53,6 +53,10 @@
 <div class="actions" style="margin-top: 1rem;">
     <button type="button" class="btn btn-warning" onclick="clearPrompt()">Очистить</button>
     <button type="button" class="btn btn-secondary" onclick="copyPrompt()">Копировать</button>
+    <form method="POST" action="{{ url_for('web.prompts_save') }}" style="display: inline;">
+        <input type="hidden" name="prompt" id="save-prompt" value="">
+        <button type="submit" class="btn btn-primary">Сохранить</button>
+    </form>
     <form method="POST" action="{{ url_for('web.comfyui_send') }}" style="display: inline;">
         <input type="hidden" name="prompt" id="comfyui-prompt" value="">
         <button type="submit" class="btn btn-primary">Отправить в ComfyUI</button>
@@ -112,6 +116,7 @@ function updatePromptDisplay() {
     
     noElements.style.display = elements.length === 0 ? 'block' : 'none';
     document.getElementById('final-prompt').value = promptParts.join(' ');
+    document.getElementById('save-prompt').value = promptParts.join(' ');
     document.getElementById('comfyui-prompt').value = promptParts.join(' ');
 }
 
