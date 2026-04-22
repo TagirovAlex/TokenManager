@@ -60,28 +60,30 @@ chown -R $USER:$GROUP /var/lib/prompt_manager
 chown -R $USER:$GROUP /var/backups/prompt_manager
 
 echo "[6/8] Настройка приложения..."
-# Клонируем во временную директорию
-TMP_DIR=$(mktemp -d)
-git clone https://github.com/TagirovAlex/TokenManager.git $TMP_DIR
-
-# Копируем файлы проекта, сохраняя существующий .env
-if [ -f "$APP_DIR/.env" ]; then
-    cp -r $TMP_DIR/* $APP_DIR/
-    cp -r $TMP_DIR/.* $APP_DIR/ 2>/dev/null || true
-else
+# Клонируем проект, если директория пустая
+if [ ! -f "$APP_DIR/run.py" ]; then
     rm -rf $APP_DIR
-    mv $TMP_DIR $APP_DIR
+    git clone https://github.com/TagirovAlex/TokenManager.git $APP_DIR
 fi
-rm -rf $TMP_DIR
 
-python3.11 -m venv venv
-source venv/bin/activate
+# Проверяем/создаём .env
+if [ -f "$APP_DIR/.env" ]; then
+    source "$APP_DIR/.env"
+fi
+
+# Создаём .env с паролем из существующего или новым
+if [ -z "$DB_PASS" ]; then
+    DB_PASS=$(openssl rand -base64 32 | tr -dc 'a-zA-Z0-9' | head -c 32)
+fi
+
+python3.11 -m venv $APP_DIR/venv
+source $APP_DIR/venv/bin/activate
 pip install --upgrade pip setuptools wheel
-pip install --no-cache-dir -r requirements.txt
+pip install --no-cache-dir -r $APP_DIR/requirements.txt
 
-# Создаём .env только если его нет
-if [ ! -f .env ]; then
-    cat > .env << EOF
+# Создаём .env если нет
+if [ ! -f "$APP_DIR/.env" ]; then
+    cat > $APP_DIR/.env << EOF
 SECRET_KEY=$(openssl rand -base64 32)
 DATABASE_URL=postgresql://$DB_USER:$DB_PASS@localhost:5432/$DB_NAME
 SERVER_HOST=127.0.0.1
@@ -93,7 +95,7 @@ COMFYUI_HOST=http://localhost:8188
 EOF
 fi
 
-chown -R $USER:$GROUP $APP_DIR/.env
+chown -R $USER:$GROUP $APP_DIR
 
 echo "[7/8] Настройка systemd..."
 cp deploy/prompt_manager.service /etc/systemd/system/
