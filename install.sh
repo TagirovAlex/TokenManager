@@ -60,8 +60,19 @@ chown -R $USER:$GROUP /var/lib/prompt_manager
 chown -R $USER:$GROUP /var/backups/prompt_manager
 
 echo "[6/8] Настройка приложения..."
-cd $APP_DIR
-cp -r . /opt/prompt_manager/
+# Клонируем во временную директорию
+TMP_DIR=$(mktemp -d)
+git clone https://github.com/TagirovAlex/TokenManager.git $TMP_DIR
+
+# Копируем файлы проекта, сохраняя существующий .env
+if [ -f "$APP_DIR/.env" ]; then
+    cp -r $TMP_DIR/* $APP_DIR/
+    cp -r $TMP_DIR/.* $APP_DIR/ 2>/dev/null || true
+else
+    rm -rf $APP_DIR
+    mv $TMP_DIR $APP_DIR
+fi
+rm -rf $TMP_DIR
 
 python3.11 -m venv venv
 source venv/bin/activate
