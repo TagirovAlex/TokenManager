@@ -10,16 +10,22 @@ GROUP="prompt"
 DB_NAME="prompt_manager"
 DB_USER="prompt_user"
 
-# Читаем пароль из .env если существует, иначе генерируем
-if [ -f "$APP_DIR/.env" ]; then
-    source "$APP_DIR/.env"
+# Читаем настройки БД из .env ТЕКУЩЕЙ директории (где запускается скрипт)
+CURRENT_DIR=$(pwd)
+if [ -f "$CURRENT_DIR/.env" ]; then
+    source "$CURRENT_DIR/.env"
 fi
-DB_PASS=${DB_PASS:-$(openssl rand -base64 32 | tr -dc 'a-zA-Z0-9' | head -c 32)}
+# Если не задан пароль - генерируем
+if [ -z "$DB_PASS" ]; then
+    DB_PASS=$(openssl rand -base64 32 | tr -dc 'a-zA-Z0-9' | head -c 32)
+fi
 
 if [ "$EUID" -ne 0 ]; then
     echo "Ошибка: запустите от root"
     exit 1
 fi
+
+echo "Настройки БД: пользователь=$DB_USER, пароль=${DB_PASS:0:8}..."
 
 echo "[1/8] Обновление системы..."
 apt update && apt upgrade -y
@@ -31,20 +37,20 @@ echo "[3/8] Настройка PostgreSQL..."
 systemctl enable postgresql
 systemctl start postgresql
 
+# Удаляем старого пользователя и создаём заново с правильным паролем
+su - postgres -c "psql -c \"DROP USER IF EXISTS $DB_USER;\"" 2>/dev/null || true
 su - postgres -c "psql -c \"CREATE USER $DB_USER WITH PASSWORD '$DB_PASS';\"" 2>/dev/null || true
 su - postgres -c "psql -c \"CREATE DATABASE $DB_NAME OWNER $DB_USER;\"" 2>/dev/null || true
 su - postgres -c "psql -c \"GRANT ALL PRIVILEGES ON DATABASE $DB_NAME TO $DB_USER;\"" 2>/dev/null || true
 
-# Настройка аутентификации
-su - postgres -c "psql -c \"ALTER USER $DB_USER WITH PASSWORD '$DB_PASS';\"" 2>/dev/null || true
-
 # Настройка pg_hba.conf для md5 аутентификации
 PG_HBA="/etc/postgresql/15/main/pg_hba.conf"
 if [ -f "$PG_HBA" ]; then
-    if ! grep -q "prompt_manager" "$PG_HBA"; then
-        echo "host    all             $DB_USER        127.0.0.1/32            md5" >> "$PG_HBA"
-        echo "host    all             $DB_USER        ::1/32                 md5" >> "$PG_HBA"
-    fi
+    # Удаляем старые строки
+    sed -i "/$DB_USER/d" "$PG_HBA"
+    # Добавляем новые
+    echo "host    all             $DB_USER        127.0.0.1/32            md5" >> "$PG_HBA"
+    echo "host    all             $DB_USER        ::1/32                 md5" >> "$PG_HBA"
     systemctl reload postgresql
 fi
 
@@ -68,9 +74,18 @@ else
     cd $APP_DIR && git pull origin master
 fi
 
-# Копируем .env из текущей директории запуска (приоритет)
+# Используем .env из текущей директории, перезаписываем в APP_DIR
+# Сначала проверяем текущую директорию
 CURRENT_DIR=$(pwd)
 if [ -f "$CURRENT_DIR/.env" ]; then
+    source "$CURRENT_DIR/.env"
+    # Пароль из .env используем для PostgreSQL
+    if [ -n "$DB_PASS" ]; then
+        # Пересоздаём пользователя PostgreSQL с правильным паролем
+        su - postgres -c "psql -c \"DROP USER IF EXISTS $DB_USER;\"" 2>/dev/null || true
+        su - postgres -c "psql -c \"CREATE USER $DB_USER WITH PASSWORD '$DB_PASS';\"" 2>/dev/null || true
+        su - postgres -c "psql -c \"GRANT ALL PRIVILEGES ON DATABASE $DB_NAME TO $DB_USER;\"" 2>/dev/null || true
+    fi
     cp "$CURRENT_DIR/.env" "$APP_DIR/.env"
     echo "Использован .env из текущей директории"
 elif [ ! -f "$APP_DIR/.env" ]; then
